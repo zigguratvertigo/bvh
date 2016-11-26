@@ -214,8 +214,62 @@ impl BIHNode {
         }
     }
 
-    // TODO Add a traverse_recursive that returns only one triangle.
-    // Such function would utilize the benefits of a BIH.
+    /// TODO proper comment
+    /// Gets the first intersected shape by using the passed function.
+    /// This function benefits from the fact that when using BIHs,
+    /// we know which child node a ray traverses first.
+    ///
+    pub fn get_first_intersection(&self, ray: &Ray, intersection_checker: &F) -> usize
+        where F: Fn(&Ray, usize) -> bool {
+        struct TraversalBranch {
+            node: BIHNode,
+            aap: AAP,
+        }
+        // Inner recursive function
+        fn get_first_intersection_inner(node: &BIHNode, ray: &Ray, indices: &mut Vec<usize>, stack: &mut Vec<TraversalBranch>) {
+            match *node {
+                BIHNode::Node { ref split_axis, ref child_l_plane, ref child_l, ref child_r_plane, ref child_r } => {
+                    let axis = *split_axis as usize;
+                    let direction = ray.direction[axis];
+                    if direction == 0.0 {
+                        // Check both sides unbiased (how??)
+                    } else {
+                        let left_plane = AAP::new(axis, *child_l_plane);
+                        let right_plane = AAP::new(axis, *child_r_plane);
+                        let in_left_volume = ray.is_left_of_aap(left_plane);
+                        let in_right_volume = ray.is_right_of_aap(right_plane);
+                        // If the ray goes right...
+                        if direction > 0.0 {
+                            // ...check the left volume first
+                            if ray.origin[axis] < child_l_plane {
+                                // Put the right side on the stack for later
+                                // Traverse the left side
+                            } else {
+                                // Traverse the right side
+                            }
+                        } else {
+                            // Otherwise, check the right volume first
+                            if ray.origin[axis] > child_r_plane {
+                                // Put the left side on the stack for later
+                                // Traverse the right side
+                            } else {
+                                // Traverse the left side
+                            }
+                        }
+                    }
+                }
+                BIHNode::Leaf { ref shapes } => {
+                    // TODO Find only one shape
+                    for index in shapes {
+                        indices.push(*index);
+                    }
+                }
+            }
+        }
+
+        let mut stack = Vec::new();
+        get_first_intersection_inner(&self, ray, indices, stack);
+    }
 }
 
 /// TODO comment
