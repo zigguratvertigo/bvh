@@ -30,7 +30,7 @@ impl AAP {
     /// ```
     /// use bvh::aap::AAP;
     ///
-    /// let aabb = AABB::new(X_AXIS, 10);
+    /// let aap = AAP::new(X_AXIS, 10);
     /// TODO Finish example
     /// ```
     ///
