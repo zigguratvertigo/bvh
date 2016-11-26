@@ -242,7 +242,7 @@ impl Ray {
         tmax >= tmin && tmax >= 0.0
     }
 
-    /// Tests the intersection of a [`Ray`] with an axis-aligned plane.
+    /// Tests the intersection of a [`Ray`] with an [`AAP`].
     ///
     /// # Examples
     /// ```
@@ -257,7 +257,7 @@ impl Ray {
     /// ```
     ///
     /// [`Ray`]: struct.Ray.html
-    /// [`AABB`]: struct.AABB.html
+    /// [`AAP`]: struct.AAP.html
     ///
     pub fn intersects_aap(&self, aap: AAP) -> bool {
         // True if the ray goes into the positive direction on the AAP's axis.
