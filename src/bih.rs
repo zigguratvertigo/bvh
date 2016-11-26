@@ -261,13 +261,15 @@ impl BIH {
     /// TODO example
     ///
     pub fn traverse_recursive<'a, T: Bounded>(&'a self, ray: &Ray, shapes: &'a [T]) -> Vec<&T> {
-        let mut indices = Vec::new();
-        self.root.traverse_recursive(ray, &mut indices);
         let mut hit_shapes = Vec::new();
-        for index in &indices {
-            let shape = &shapes[*index];
-            if ray.intersects_aabb(&shape.aabb()) {
-                hit_shapes.push(shape);
+        if ray.intersects_aabb(&self.aabb) {
+            let mut indices = Vec::new();
+            self.root.traverse_recursive(ray, &mut indices);
+            for index in &indices {
+                let shape = &shapes[*index];
+                if ray.intersects_aabb(&shape.aabb()) {
+                    hit_shapes.push(shape);
+                }
             }
         }
         hit_shapes
