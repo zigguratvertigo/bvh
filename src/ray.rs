@@ -2,6 +2,7 @@
 //! for axis aligned bounding boxes and triangles.
 
 use aabb::AABB;
+use aap::AAP;
 use nalgebra::{Vector3, Point3, Norm, Cross, Dot};
 use std::f32::INFINITY;
 use EPSILON;
@@ -239,6 +240,30 @@ impl Ray {
         tmax = tmax.min(tz1.max(tz2));
 
         tmax >= tmin && tmax >= 0.0
+    }
+
+    /// Tests the intersection of a [`Ray`] with an axis-aligned plane.
+    ///
+    /// # Examples
+    /// ```
+    /// use bvh::ray::Ray;
+    /// use bvh::nalgebra::{Point3,Vector3};
+    ///
+    /// let origin = Point3::new(0.0,0.0,0.0);
+    /// let direction = Vector3::new(1.0,0.0,0.0);
+    /// let ray = Ray::new(origin, direction);
+    ///
+    /// TODO Finish example
+    /// ```
+    ///
+    /// [`Ray`]: struct.Ray.html
+    /// [`AABB`]: struct.AABB.html
+    ///
+    pub fn intersects_aap(&self, aap: AAP) -> bool {
+        // True if the ray goes into the positive direction on the AAP's axis.
+        let goes_right = self.sign[aap.get_axis()] == 0;
+        // Return true if the origin lies on the opposite side of the AAP than the ray's direction.
+        return if goes_right { aap.has_point_to_right(&self.origin) } else { aap.has_point_to_left(&self.origin) };
     }
 
     /// Implementation of the [Möller-Trumbore triangle/ray intersection algorithm]
