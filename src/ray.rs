@@ -261,9 +261,59 @@ impl Ray {
     ///
     pub fn intersects_aap(&self, aap: AAP) -> bool {
         // True if the ray goes into the positive direction on the AAP's axis.
-        let goes_right = self.sign[aap.get_axis()] == 0;
+        let goes_right = self.sign[aap.axis()] == 0;
         // Return true if the origin lies on the opposite side of the AAP than the ray's direction.
-        return if goes_right { aap.has_point_to_right(&self.origin) } else { aap.has_point_to_left(&self.origin) };
+        if goes_right {
+            aap.has_point_to_left(&self.origin)
+        } else {
+            aap.has_point_to_right(&self.origin)
+        }
+    }
+
+    // TODO currently unused
+    /// Tests if part of the [`Ray`] is left of the [`AAP`].
+    /// Either the [`Ray`] starts left of the [`AAP`], or it intersects it.
+    ///
+    /// # Examples
+    /// ```
+    /// use bvh::ray::Ray;
+    /// use bvh::nalgebra::{Point3,Vector3};
+    ///
+    /// let origin = Point3::new(0.0,0.0,0.0);
+    /// let direction = Vector3::new(1.0,0.0,0.0);
+    /// let ray = Ray::new(origin, direction);
+    ///
+    /// TODO Finish example
+    /// ```
+    ///
+    /// [`Ray`]: struct.Ray.html
+    /// [`AABB`]: struct.AABB.html
+    ///
+    pub fn is_left_of_aap(&self, aap: AAP) -> bool {
+        aap.has_point_to_left(&self.origin) || self.direction[aap.axis()] < 0.0
+    }
+
+    // TODO currently unused
+    /// Tests if part of the [`Ray`] is right of the [`AAP`].
+    /// Either the [`Ray`] starts right of the [`AAP`], or it intersects it.
+    ///
+    /// # Examples
+    /// ```
+    /// use bvh::ray::Ray;
+    /// use bvh::nalgebra::{Point3,Vector3};
+    ///
+    /// let origin = Point3::new(0.0,0.0,0.0);
+    /// let direction = Vector3::new(1.0,0.0,0.0);
+    /// let ray = Ray::new(origin, direction);
+    ///
+    /// TODO Finish example
+    /// ```
+    ///
+    /// [`Ray`]: struct.Ray.html
+    /// [`AABB`]: struct.AABB.html
+    ///
+    pub fn is_right_of_aap(&self, aap: AAP) -> bool {
+        aap.has_point_to_right(&self.origin) || self.direction[aap.axis()] > 0.0
     }
 
     /// Implementation of the [Möller-Trumbore triangle/ray intersection algorithm]

@@ -1,8 +1,7 @@
 //! Axis Aligned Planes.
 
-use nalgebra::{Point3, Vector3};
+use nalgebra::Point3;
 use std::f32;
-use std::ops::Index;
 
 /// Index of the X axis. Used to access `Vector3`/`Point3` structs via index.
 pub const X_AXIS: usize = 0;
@@ -50,7 +49,7 @@ impl AAP {
     ///
     /// [`AAP`]: struct.AAP.html
     ///
-    pub fn get_axis(&self) -> usize {
+    pub fn axis(&self) -> usize {
         self.axis
     }
 

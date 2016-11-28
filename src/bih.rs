@@ -2,6 +2,7 @@
 //!
 
 use EPSILON;
+use bounding_hierarchy::BoundingHierarchy;
 use aabb::{AABB, Bounded};
 use aap::AAP;
 use ray::Ray;
@@ -14,7 +15,7 @@ use std::iter::repeat;
 pub enum BIHNode {
     /// Leaf node.
     Leaf {
-        /// The shapes contained in this leaf.
+        /// The index of the shape contained in this leaf.
         shapes: Vec<usize>,
     },
     /// Inner node.
@@ -57,7 +58,7 @@ impl BIHNode {
         }
         let (aabb_bounds, centroid_bounds) = convex_hull;
 
-        // If there are five or fewer elements, don't split anymore
+        // If there is five or fewer elements, don't split anymore
         if indices.len() <= 5 {
             return (aabb_bounds, BIHNode::Leaf { shapes: indices });
         }
@@ -177,11 +178,22 @@ impl BIHNode {
     ///
     fn pretty_print(&self, depth: usize) {
         let padding: String = repeat(" ").take(depth).collect();
+        let axes = ["X", "Y", "Z"];
         match *self {
-            BIHNode::Node { ref child_l, ref child_r, .. } => {
-                println!("{}child_l", padding);
+            BIHNode::Node { ref split_axis,
+                            ref child_l_plane,
+                            ref child_l,
+                            ref child_r_plane,
+                            ref child_r } => {
+                println!("{}child_l ({}, {})",
+                         padding,
+                         axes[*split_axis as usize],
+                         child_l_plane);
                 child_l.pretty_print(depth + 1);
-                println!("{}child_r", padding);
+                println!("{}child_r ({}, {})",
+                         padding,
+                         axes[*split_axis as usize],
+                         child_r_plane);
                 child_r.pretty_print(depth + 1);
             }
             BIHNode::Leaf { ref shapes } => {
@@ -198,11 +210,15 @@ impl BIHNode {
     ///
     pub fn traverse_recursive(&self, ray: &Ray, indices: &mut Vec<usize>) {
         match *self {
-            BIHNode::Node { ref split_axis, ref child_l_plane, ref child_l, ref child_r_plane, ref child_r } => {
-                if ray.intersects_aap(AAP::new(*split_axis as usize, *child_l_plane)) {
+            BIHNode::Node { ref split_axis,
+                            ref child_l_plane,
+                            ref child_l,
+                            ref child_r_plane,
+                            ref child_r } => {
+                if ray.is_left_of_aap(AAP::new(*split_axis as usize, *child_l_plane)) {
                     child_l.traverse_recursive(ray, indices);
                 }
-                if ray.intersects_aap(AAP::new(*split_axis as usize, *child_r_plane)) {
+                if ray.is_right_of_aap(AAP::new(*split_axis as usize, *child_r_plane)) {
                     child_r.traverse_recursive(ray, indices);
                 }
             }
@@ -214,62 +230,63 @@ impl BIHNode {
         }
     }
 
-    /// TODO proper comment
-    /// Gets the first intersected shape by using the passed function.
-    /// This function benefits from the fact that when using BIHs,
-    /// we know which child node a ray traverses first.
-    ///
-    pub fn get_first_intersection(&self, ray: &Ray, intersection_checker: &F) -> usize
-        where F: Fn(&Ray, usize) -> bool {
-        struct TraversalBranch {
-            node: BIHNode,
-            aap: AAP,
-        }
-        // Inner recursive function
-        fn get_first_intersection_inner(node: &BIHNode, ray: &Ray, indices: &mut Vec<usize>, stack: &mut Vec<TraversalBranch>) {
-            match *node {
-                BIHNode::Node { ref split_axis, ref child_l_plane, ref child_l, ref child_r_plane, ref child_r } => {
-                    let axis = *split_axis as usize;
-                    let direction = ray.direction[axis];
-                    if direction == 0.0 {
-                        // Check both sides unbiased (how??)
-                    } else {
-                        let left_plane = AAP::new(axis, *child_l_plane);
-                        let right_plane = AAP::new(axis, *child_r_plane);
-                        let in_left_volume = ray.is_left_of_aap(left_plane);
-                        let in_right_volume = ray.is_right_of_aap(right_plane);
-                        // If the ray goes right...
-                        if direction > 0.0 {
-                            // ...check the left volume first
-                            if ray.origin[axis] < child_l_plane {
-                                // Put the right side on the stack for later
-                                // Traverse the left side
-                            } else {
-                                // Traverse the right side
-                            }
-                        } else {
-                            // Otherwise, check the right volume first
-                            if ray.origin[axis] > child_r_plane {
-                                // Put the left side on the stack for later
-                                // Traverse the right side
-                            } else {
-                                // Traverse the left side
-                            }
-                        }
-                    }
-                }
-                BIHNode::Leaf { ref shapes } => {
-                    // TODO Find only one shape
-                    for index in shapes {
-                        indices.push(*index);
-                    }
-                }
-            }
-        }
-
-        let mut stack = Vec::new();
-        get_first_intersection_inner(&self, ray, indices, stack);
-    }
+    // /// TODO proper comment
+    // /// Gets the index of the first shape that the passed function considers intersected.
+    // /// This function benefits from the fact that when using BIHs,
+    // /// we know which child node a ray traverses first.
+    // ///
+    // pub fn get_first_intersection<'a, F>(&self, ray: &Ray, intersection_checker: &F) -> usize
+    //     where F: Fn(&Ray, usize) -> bool {
+    //     struct TraversalBranch<'a> {
+    //         node: &'a BIHNode,
+    //         aap: AAP,
+    //     }
+    //     // Inner recursive function
+    //     fn get_first_intersection_inner<'a>(node: &'a BIHNode, ray: &'a Ray, stack: &'a mut Vec<TraversalBranch<'a>>) -> usize {
+    //         match *node {
+    //             BIHNode::Node { ref split_axis, ref child_l_plane, ref child_l, ref child_r_plane, ref child_r } => {
+    //                 let mut result = usize::max_value();
+    //
+    //                 let axis = *split_axis as usize;
+    //                 let origin = ray.origin[axis];
+    //                 let direction = ray.direction[axis];
+    //                 if direction == 0.0 {
+    //                     // Check both sides unbiased (how??)
+    //                 } else {
+    //                     let left_plane = AAP::new(axis, *child_l_plane);
+    //                     let right_plane = AAP::new(axis, *child_r_plane);
+    //                     // If the ray goes right...
+    //                     if direction > 0.0 {
+    //                         // ...check the left volume first
+    //                         if origin < *child_l_plane {
+    //                             // Put the right side on the stack for later
+    //                             stack.push(TraversalBranch{node: child_l, aap: left_plane});
+    //                             // Traverse the left side
+    //
+    //                         } else {
+    //                             // Traverse the right side
+    //                         }
+    //                     } else {
+    //                         // Otherwise, check the right volume first
+    //                         if origin > *child_r_plane {
+    //                             // Put the left side on the stack for later
+    //                             // Traverse the right side
+    //                         } else {
+    //                             // Traverse the left side
+    //                         }
+    //                     }
+    //                 }
+    //                 result
+    //             }
+    //             BIHNode::Leaf { ref shape } => {
+    //                 if |ray, shape|{ intersection_checker(&ray, *shape) } { *shape } else { usize::max_value() }
+    //             }
+    //         }
+    //     }
+    //
+    //     let mut stack = Vec::new();
+    //     get_first_intersection_inner(&self, ray, &mut stack)
+    // }
 }
 
 /// TODO comment
@@ -282,39 +299,17 @@ pub struct BIH {
     pub root: BIHNode,
 }
 
-impl BIH {
-    /// Creates a new [`BIH`] from the `shapes` slice.
-    ///
-    /// [`BIH`]: struct.BIH.html
-    ///
-    /// # Examples
-    ///
-    /// TODO example
-    ///
-    pub fn build<T: Bounded>(shapes: &[T]) -> BIH {
+impl BoundingHierarchy for BIH {
+    fn build<T: Bounded>(shapes: &[T]) -> BIH {
         let indices = (0..shapes.len()).collect::<Vec<usize>>();
         let (aabb, root) = BIHNode::build(shapes, indices);
-        BIH { aabb: aabb, root: root }
+        BIH {
+            aabb: aabb,
+            root: root,
+        }
     }
 
-    /// Prints the [`BIH`] in a tree-like visualization.
-    ///
-    /// [`BIH`]: struct.BIH.html
-    ///
-    pub fn pretty_print(&self) {
-        self.root.pretty_print(0);
-    }
-
-    /// Traverses the tree recursively. Returns a subset of `shapes`, in which the [`AABB`]s
-    /// of the elements were hit by the `ray`.
-    ///
-    /// [`AABB`]: ../aabb/struct.AABB.html
-    ///
-    /// # Examples
-    ///
-    /// TODO example
-    ///
-    pub fn traverse_recursive<'a, T: Bounded>(&'a self, ray: &Ray, shapes: &'a [T]) -> Vec<&T> {
+    fn traverse<'a, T: Bounded>(&'a self, ray: &Ray, shapes: &'a [T]) -> Vec<&T> {
         let mut hit_shapes = Vec::new();
         if ray.intersects_aabb(&self.aabb) {
             let mut indices = Vec::new();
@@ -328,6 +323,50 @@ impl BIH {
         }
         hit_shapes
     }
+
+    fn pretty_print(&self) {
+        self.root.pretty_print(0);
+    }
 }
 
-// TODO Write tests
+#[cfg(test)]
+pub mod tests {
+    use bounding_hierarchy::BoundingHierarchy;
+    use bih::BIH;
+    use testbase::*;
+
+    /// Creates a `BIH` for a fixed scene structure.
+    pub fn build_some_bih() -> (Vec<UnitBox>, BIH) {
+        let shapes = generate_aligned_boxes();
+
+        let bih = BoundingHierarchy::build(&shapes);
+        (shapes, bih)
+    }
+
+    #[test]
+    /// Tests whether the building procedure succeeds in not failing.
+    fn test_build_bih_aligned_boxes() {
+        let (_, bih) = build_some_bih();
+        bih.pretty_print();
+    }
+
+    #[test]
+    /// Runs some primitive tests for intersections of a ray with a fixed scene given as a BIH.
+    fn test_traverse_bih() {
+        let (shapes, bih) = build_some_bih();
+
+        test_traverse_aligned_boxes(&bih, &shapes);
+    }
+
+    #[bench]
+    /// Benchmark the construction of a BIH with 120,000 triangles.
+    fn bench_build_120k_triangles_bih(mut b: &mut ::test::Bencher) {
+        bench_build_120k_triangles::<BIH>(&mut b);
+    }
+
+    #[bench]
+    /// Benchmark intersecting 120,000 triangles using the recursive BIH.
+    fn bench_intersect_120k_triangles_bih(mut b: &mut ::test::Bencher) {
+        bench_intersect_120k_triangles::<BIH>(&mut b);
+    }
+}

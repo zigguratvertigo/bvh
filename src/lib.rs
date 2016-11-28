@@ -73,9 +73,12 @@ pub extern crate nalgebra;
 /// TODO: replace by/add ULPS/relative float comparison methods.
 pub const EPSILON: f32 = 0.00001;
 
+pub mod bounding_hierarchy;
 pub mod aabb;
 pub mod bvh;
-pub mod flat_bvh;
+// pub mod flat_bvh;
 pub mod aap;
 pub mod bih;
 pub mod ray;
+#[cfg(test)]
+mod testbase;
