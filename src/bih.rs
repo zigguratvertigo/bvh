@@ -346,8 +346,7 @@ pub mod tests {
     #[test]
     /// Tests whether the building procedure succeeds in not failing.
     fn test_build_bih_aligned_boxes() {
-        let (_, bih) = build_some_bih();
-        bih.pretty_print();
+        build_some_bih();
     }
 
     #[test]
@@ -359,9 +358,33 @@ pub mod tests {
     }
 
     #[bench]
+    /// Benchmark the construction of a BIH with 1,200 triangles.
+    fn bench_build_1200_triangles_bih(mut b: &mut ::test::Bencher) {
+        bench_build_1200_triangles::<BIH>(&mut b);
+    }
+
+    #[bench]
+    /// Benchmark the construction of a BIH with 12,000 triangles.
+    fn bench_build_12k_triangles_bih(mut b: &mut ::test::Bencher) {
+        bench_build_12k_triangles::<BIH>(&mut b);
+    }
+
+    #[bench]
     /// Benchmark the construction of a BIH with 120,000 triangles.
     fn bench_build_120k_triangles_bih(mut b: &mut ::test::Bencher) {
         bench_build_120k_triangles::<BIH>(&mut b);
+    }
+
+    #[bench]
+    /// Benchmark intersecting 1,200 triangles using the recursive BIH.
+    fn bench_intersect_1200_triangles_bih(mut b: &mut ::test::Bencher) {
+        bench_intersect_1200_triangles::<BIH>(&mut b);
+    }
+
+    #[bench]
+    /// Benchmark intersecting 12,000 triangles using the recursive BIH.
+    fn bench_intersect_12k_triangles_bih(mut b: &mut ::test::Bencher) {
+        bench_intersect_12k_triangles::<BIH>(&mut b);
     }
 
     #[bench]

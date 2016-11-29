@@ -32,54 +32,50 @@ pub fn generate_aligned_boxes() -> Vec<UnitBox> {
     shapes
 }
 
-pub fn test_traverse_aligned_boxes<T: BoundingHierarchy>(structure: &T, shapes: &Vec<UnitBox>) {
-    {
-        // Define a ray which traverses the x-axis from afar
-        let position = Point3::new(-1000.0, 0.0, 0.0);
-        let direction = Vector3::new(1.0, 0.0, 0.0);
-        let ray = Ray::new(position, direction);
+pub fn test_ray_intersects_boxes<T: BoundingHierarchy>(structure: &T,
+                                                       pos: Point3<f32>,
+                                                       dir: Vector3<f32>,
+                                                       shapes: &[UnitBox],
+                                                       ids: &[i32]) {
+    // Create the ray.
+    let ray = Ray::new(pos, dir);
 
-        // It shuold hit all shapes
-        let hit_shapes = structure.traverse(&ray, &shapes);
-        assert!(hit_shapes.len() == 21);
-        let mut xs = HashSet::new();
-        for shape in &hit_shapes {
-            xs.insert(shape.id);
-        }
-        for x in -10..11 {
-            assert!(xs.contains(&x));
-        }
+    // Traverse the structure.
+    let hit_shapes = structure.traverse(&ray, &shapes);
+
+    // Test the number of hit shapes.
+    assert!(hit_shapes.len() == ids.len());
+
+    // Collect the `UnitBox` ids.
+    let mut xs = HashSet::new();
+    for shape in &hit_shapes {
+        xs.insert(shape.id);
     }
 
-    {
-        // Define a ray which traverses the y-axis from afar
-        let position = Point3::new(0.0, -1000.0, 0.0);
-        let direction = Vector3::new(0.0, 1.0, 0.0);
-        let ray = Ray::new(position, direction);
-
-        // It should hit only one box
-        let hit_shapes = structure.traverse(&ray, &shapes);
-        assert!(hit_shapes.len() == 1);
-        assert!(hit_shapes[0].id == 0);
+    // Test whether all expected ids were hit.
+    for id in ids {
+        assert!(xs.contains(&id));
     }
+}
 
-    {
-        // Define a ray which intersects the x-axis diagonally
-        let position = Point3::new(6.0, 0.5, 0.0);
-        let direction = Vector3::new(-2.0, -1.0, 0.0);
-        let ray = Ray::new(position, direction);
+pub fn test_traverse_aligned_boxes<T: BoundingHierarchy>(structure: &T, shapes: &[UnitBox]) {
+    // Define a ray which traverses the x-axis from afar.
+    let position = Point3::new(-1000.0, 0.0, 0.0);
+    let direction = Vector3::new(1.0, 0.0, 0.0);
+    let ids = (-10..11).collect::<Vec<_>>();
+    test_ray_intersects_boxes(structure, position, direction, shapes, &ids);
 
-        // It should hit exactly three boxes
-        let hit_shapes = structure.traverse(&ray, &shapes);
-        assert!(hit_shapes.len() == 3);
-        let mut xs = HashSet::new();
-        for shape in &hit_shapes {
-            xs.insert(shape.id);
-        }
-        assert!(xs.contains(&6));
-        assert!(xs.contains(&5));
-        assert!(xs.contains(&4));
-    }
+    // Define a ray which traverses the y-axis from afar.
+    let position = Point3::new(0.0, -1000.0, 0.0);
+    let direction = Vector3::new(0.0, 1.0, 0.0);
+    let ids = [0];
+    test_ray_intersects_boxes(structure, position, direction, shapes, &ids);
+
+    // Define a ray which intersects the x-axis diagonally.
+    let position = Point3::new(6.0, 0.5, 0.0);
+    let direction = Vector3::new(-2.0, -1.0, 0.0);
+    let ids = [4, 5, 6];
+    test_ray_intersects_boxes(structure, position, direction, shapes, &ids);
 }
 
 /// A triangle struct. Instance of a more complex `Bounded` primitive.
@@ -107,7 +103,7 @@ impl Bounded for Triangle {
     }
 }
 
-/// Creates a unit size cube centered at `pos` and pushes the triangles to `shapes`
+/// Creates a unit size cube centered at `pos` and pushes the triangles to `shapes`.
 fn push_cube(pos: Point3<f32>, shapes: &mut Vec<Triangle>) {
     let top_front_right = pos + Vector3::new(0.5, 0.5, -0.5);
     let top_back_right = pos + Vector3::new(0.5, 0.5, 0.5);
@@ -142,6 +138,7 @@ fn splitmix64(x: &mut u64) -> u64 {
     z ^ (z >> 31)
 }
 
+/// Generates a new Point3, mutates the seed.
 fn next_point3(seed: &mut u64) -> Point3<f32> {
     let u = splitmix64(seed);
     let a = (u >> 48 & 0xFFFFFFFF) as i32 - 0xFFFF;
@@ -150,6 +147,7 @@ fn next_point3(seed: &mut u64) -> Point3<f32> {
     Point3::new(a as f32, b as f32, c as f32)
 }
 
+/// Creates `n` deterministic random cubes. Returns the `Vec` of surface `Triangle`s.
 pub fn create_n_cubes(n: u64) -> Vec<Triangle> {
     let mut vec = Vec::new();
     let mut seed = 0;
@@ -160,19 +158,34 @@ pub fn create_n_cubes(n: u64) -> Vec<Triangle> {
     vec
 }
 
+/// Creates a `Ray` from the random `seed`. Mutates the `seed`.
 pub fn create_ray(seed: &mut u64) -> Ray {
     let origin = next_point3(seed);
     let direction = next_point3(seed).to_vector();
     Ray::new(origin, direction)
 }
 
-/// Benchmark the construction of a BVH with 120,000 triangles.
-pub fn bench_build_120k_triangles<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
-    let triangles = create_n_cubes(10_000);
-
+/// Benchmark the construction of a `BoundingHierarchy` with 120,000 triangles.
+pub fn bench_build_n_triangles<T: BoundingHierarchy>(n: u64, b: &mut ::test::Bencher) {
+    let triangles = create_n_cubes(n);
     b.iter(|| {
         T::build(&triangles);
     });
+}
+
+/// Benchmark the construction of a `BoundingHierarchy` with 1,200 triangles.
+pub fn bench_build_1200_triangles<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
+    bench_build_n_triangles::<T>(100, b);
+}
+
+/// Benchmark the construction of a `BoundingHierarchy` with 12,000 triangles.
+pub fn bench_build_12k_triangles<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
+    bench_build_n_triangles::<T>(1_000, b);
+}
+
+/// Benchmark the construction of a `BoundingHierarchy` with 120,000 triangles.
+pub fn bench_build_120k_triangles<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
+    bench_build_n_triangles::<T>(10_000, b);
 }
 
 #[bench]
@@ -184,7 +197,7 @@ fn bench_intersect_120k_triangles_list(b: &mut ::test::Bencher) {
     b.iter(|| {
         let ray = create_ray(&mut seed);
 
-        // Iterate over the list of triangles
+        // Iterate over the list of triangles.
         for triangle in &triangles {
             ray.intersects_triangle(&triangle.a, &triangle.b, &triangle.c);
         }
@@ -200,9 +213,9 @@ fn bench_intersect_120k_triangles_list_aabb(b: &mut ::test::Bencher) {
     b.iter(|| {
         let ray = create_ray(&mut seed);
 
-        // Iterate over the list of triangles
+        // Iterate over the list of triangles.
         for triangle in &triangles {
-            // First test whether the ray intersects the AABB of the triangle
+            // First test whether the ray intersects the AABB of the triangle.
             if ray.intersects_aabb(&triangle.aabb()) {
                 ray.intersects_triangle(&triangle.a, &triangle.b, &triangle.c);
             }
@@ -210,15 +223,16 @@ fn bench_intersect_120k_triangles_list_aabb(b: &mut ::test::Bencher) {
     });
 }
 
-pub fn bench_intersect_120k_triangles<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
-    let triangles = create_n_cubes(10_000);
-    let mut seed = 0;
+/// Benchmark the traversal of a `BoundingHierarchy` with `n` triangles.
+pub fn bench_intersect_n_triangles<T: BoundingHierarchy>(n: u64, b: &mut ::test::Bencher) {
+    let triangles = create_n_cubes(n);
     let structure = T::build(&triangles);
+    let mut seed = 0;
 
     b.iter(|| {
         let ray = create_ray(&mut seed);
 
-        // Traverse the BIH recursively
+        // Traverse the `BoundingHierarchy` recursively.
         let hits = structure.traverse(&ray, &triangles);
 
         // Traverse the resulting list of positive AABB tests
@@ -226,4 +240,19 @@ pub fn bench_intersect_120k_triangles<T: BoundingHierarchy>(b: &mut ::test::Benc
             ray.intersects_triangle(&triangle.a, &triangle.b, &triangle.c);
         }
     });
+}
+
+/// Benchmark the traversal of a `BoundingHierarchy` with 1,200 triangles.
+pub fn bench_intersect_1200_triangles<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
+    bench_intersect_n_triangles::<T>(100, b);
+}
+
+/// Benchmark the traversal of a `BoundingHierarchy` with 12,000 triangles.
+pub fn bench_intersect_12k_triangles<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
+    bench_intersect_n_triangles::<T>(1_000, b);
+}
+
+/// Benchmark the traversal of a `BoundingHierarchy` with 120,000 triangles.
+pub fn bench_intersect_120k_triangles<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
+    bench_intersect_n_triangles::<T>(10_000, b);
 }

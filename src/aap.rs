@@ -3,14 +3,18 @@
 use nalgebra::Point3;
 use std::f32;
 
-/// Index of the X axis. Used to access `Vector3`/`Point3` structs via index.
-pub const X_AXIS: usize = 0;
+/// An Axis in a three-dimensional coordinate system.
+/// Used to access `Vector3`/`Point3` structs via index.
+pub enum Axis {
+    /// Index of the X axis.
+    XAxis = 0,
 
-/// Index of the Y axis. Used to access `Vector3`/`Point3` structs via index.
-pub const Y_AXIS: usize = 1;
+    /// Index of the Y axis.
+    YAxis = 1,
 
-/// Index of the Z axis. Used to access `Vector3`/`Point3` structs via index.
-pub const Z_AXIS: usize = 2;
+    /// Index of the Z axis.
+    ZAxis = 2,
+}
 
 /// AAP struct.
 #[derive(Debug, Copy, Clone)]
