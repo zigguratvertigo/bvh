@@ -253,7 +253,7 @@ impl Ray {
     /// let direction = Vector3::new(1.0,0.0,0.0);
     /// let ray = Ray::new(origin, direction);
     ///
-    /// TODO Finish example
+    /// // TODO Finish example
     /// ```
     ///
     /// [`Ray`]: struct.Ray.html
@@ -283,7 +283,7 @@ impl Ray {
     /// let direction = Vector3::new(1.0,0.0,0.0);
     /// let ray = Ray::new(origin, direction);
     ///
-    /// TODO Finish example
+    /// // TODO Finish example
     /// ```
     ///
     /// [`Ray`]: struct.Ray.html
@@ -306,7 +306,7 @@ impl Ray {
     /// let direction = Vector3::new(1.0,0.0,0.0);
     /// let ray = Ray::new(origin, direction);
     ///
-    /// TODO Finish example
+    /// // TODO Finish example
     /// ```
     ///
     /// [`Ray`]: struct.Ray.html

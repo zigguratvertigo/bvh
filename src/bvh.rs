@@ -228,11 +228,25 @@ pub struct BVH {
     pub root: BVHNode,
 }
 
-impl BoundingHierarchy for BVH {
-    fn build<T: Bounded>(shapes: &[T]) -> BVH {
+impl BVH {
+    /// Creates a new [`BVH`] from the `shapes` slice.
+    ///
+    /// [`BVH`]: struct.BVH.html
+    ///
+    /// # Examples
+    ///
+    /// // TODO example
+    ///
+    pub fn build<T: Bounded>(shapes: &[T]) -> BVH {
         let indices = (0..shapes.len()).collect::<Vec<usize>>();
         let root = BVHNode::build(shapes, indices);
         BVH { root: root }
+    }
+}
+
+impl BoundingHierarchy for BVH {
+    fn build<T: Bounded>(shapes: &[T]) -> BVH {
+        BVH::build(shapes)
     }
 
     fn traverse<'a, T: Bounded>(&'a self, ray: &Ray, shapes: &'a [T]) -> Vec<&T> {
@@ -270,12 +284,11 @@ pub mod tests {
     #[test]
     /// Tests whether the building procedure succeeds in not failing.
     fn test_build_bvh_aligned_boxes() {
-        let (_, bvh) = build_some_bvh();
-        bvh.pretty_print();
+        build_some_bvh();
     }
 
     #[test]
-    /// Runs some primitive tests for intersections of a ray with a fixed scene given as a BVH.
+    /// Runs some primitive tests for intersections of a ray with a fixed scene given as a `BVH`.
     fn test_traverse_bvh() {
         let (shapes, bvh) = build_some_bvh();
 
@@ -283,14 +296,38 @@ pub mod tests {
     }
 
     #[bench]
-    /// Benchmark the construction of a BVH with 120,000 triangles.
-    fn bench_build_120k_triangles_bvh(mut b: &mut ::test::Bencher) {
+    /// Benchmark the construction of a `BVH` with 1,200 triangles.
+    fn bench_build_1200_triangles_bih(mut b: &mut ::test::Bencher) {
+        bench_build_1200_triangles::<BVH>(&mut b);
+    }
+
+    #[bench]
+    /// Benchmark the construction of a `BVH` with 12,000 triangles.
+    fn bench_build_12k_triangles_bih(mut b: &mut ::test::Bencher) {
+        bench_build_12k_triangles::<BVH>(&mut b);
+    }
+
+    #[bench]
+    /// Benchmark the construction of a `BVH` with 120,000 triangles.
+    fn bench_build_120k_triangles_bih(mut b: &mut ::test::Bencher) {
         bench_build_120k_triangles::<BVH>(&mut b);
     }
 
     #[bench]
-    /// Benchmark intersecting 120,000 triangles using the recursive BVH.
-    fn bench_intersect_120k_triangles_bvh(mut b: &mut ::test::Bencher) {
+    /// Benchmark intersecting 1,200 triangles using the recursive `BVH`.
+    fn bench_intersect_1200_triangles_bih(mut b: &mut ::test::Bencher) {
+        bench_intersect_1200_triangles::<BVH>(&mut b);
+    }
+
+    #[bench]
+    /// Benchmark intersecting 12,000 triangles using the recursive `BVH`.
+    fn bench_intersect_12k_triangles_bih(mut b: &mut ::test::Bencher) {
+        bench_intersect_12k_triangles::<BVH>(&mut b);
+    }
+
+    #[bench]
+    /// Benchmark intersecting 120,000 triangles using the recursive `BVH`.
+    fn bench_intersect_120k_triangles_bih(mut b: &mut ::test::Bencher) {
         bench_intersect_120k_triangles::<BVH>(&mut b);
     }
 }

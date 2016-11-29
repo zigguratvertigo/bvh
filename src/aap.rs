@@ -1,20 +1,8 @@
 //! Axis Aligned Planes.
 
+use aabb::Axis;
 use nalgebra::Point3;
 use std::f32;
-
-/// An Axis in a three-dimensional coordinate system.
-/// Used to access `Vector3`/`Point3` structs via index.
-pub enum Axis {
-    /// Index of the X axis.
-    XAxis = 0,
-
-    /// Index of the Y axis.
-    YAxis = 1,
-
-    /// Index of the Z axis.
-    ZAxis = 2,
-}
 
 /// AAP struct.
 #[derive(Debug, Copy, Clone)]
@@ -32,19 +20,17 @@ impl AAP {
     /// # Examples
     /// ```
     /// use bvh::aap::AAP;
+    /// use bvh::aabb::Axis;
     ///
-    /// let aap = AAP::new(X_AXIS, 10);
-    /// TODO Finish example
+    /// let aap = AAP::new(Axis::X, 10.0);
+    /// // TODO Finish example
     /// ```
     ///
     /// [`AAP`]: struct.AAP.html
     ///
-    pub fn new(axis: usize, offset: f32) -> AAP {
-        if axis > 2 {
-            panic!("The axis of an AAP mus be 0 (x), 1 (y) or 2 (z).");
-        }
+    pub fn new(axis: Axis, offset: f32) -> AAP {
         AAP {
-            axis: axis,
+            axis: axis as usize,
             offset: offset,
         }
     }
@@ -107,7 +93,7 @@ impl AAP {
 ///
 impl Default for AAP {
     fn default() -> AAP {
-        AAP::new(0, 0f32)
+        AAP::new(Axis::X, 0.0)
     }
 }
 

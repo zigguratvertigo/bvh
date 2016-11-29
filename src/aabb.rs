@@ -4,14 +4,28 @@ use nalgebra::{Point3, Vector3};
 use std::f32;
 use std::ops::Index;
 
-/// Index of the X axis. Used to access `Vector3`/`Point3` structs via index.
-pub const X_AXIS: usize = 0;
+/// An Axis in a three-dimensional coordinate system.
+/// Used to access `Vector3`/`Point3` structs via index.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum Axis {
+    /// Index of the X axis.
+    X = 0,
 
-/// Index of the Y axis. Used to access `Vector3`/`Point3` structs via index.
-pub const Y_AXIS: usize = 1;
+    /// Index of the Y axis.
+    Y = 1,
 
-/// Index of the Z axis. Used to access `Vector3`/`Point3` structs via index.
-pub const Z_AXIS: usize = 2;
+    /// Index of the Z axis.
+    Z = 2,
+}
+
+/// Make slices indexable by Axes.
+impl Index<Axis> for [f32] {
+    type Output = f32;
+
+    fn index(&self, axis: Axis) -> &f32 {
+        self.index(axis as usize)
+    }
+}
 
 /// AABB struct.
 #[derive(Debug, Copy, Clone)]
@@ -356,7 +370,7 @@ impl AABB {
     ///
     /// # Examples
     /// ```
-    /// use bvh::aabb::{AABB, X_AXIS};
+    /// use bvh::aabb::{AABB, Axis};
     /// use bvh::nalgebra::Point3;
     ///
     /// let min = Point3::new(-100.0,0.0,0.0);
@@ -364,19 +378,19 @@ impl AABB {
     ///
     /// let aabb = AABB::with_bounds(min, max);
     /// let axis = aabb.largest_axis();
-    /// assert!(axis == X_AXIS);
+    /// assert!(axis == Axis::X);
     /// ```
     ///
     /// [`AABB`]: struct.AABB.html
     ///
-    pub fn largest_axis(&self) -> usize {
+    pub fn largest_axis(&self) -> Axis {
         let size = self.size();
         if size.x > size.y && size.x > size.z {
-            X_AXIS
+            Axis::X
         } else if size.y > size.z {
-            Y_AXIS
+            Axis::Y
         } else {
-            Z_AXIS
+            Axis::Z
         }
     }
 }

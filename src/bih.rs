@@ -3,7 +3,7 @@
 
 use EPSILON;
 use bounding_hierarchy::BoundingHierarchy;
-use aabb::{AABB, Bounded};
+use aabb::{AABB, Axis, Bounded};
 use aap::AAP;
 use ray::Ray;
 use std::boxed::Box;
@@ -20,9 +20,8 @@ pub enum BIHNode {
     },
     /// Inner node.
     Node {
-        /// The axis the split planes perpendicular to.
-        /// 00 = x, 01 = y, 10 = z, like defined in the aabb module.
-        split_axis: u8,
+        /// The split axis.
+        split_axis: Axis,
 
         /// The "left" plane splitting child_l from the rest.
         child_l_plane: f32,
@@ -162,7 +161,7 @@ impl BIHNode {
 
         // Construct the actual data structure
         let node = BIHNode::Node {
-            split_axis: split_axis as u8,
+            split_axis: split_axis,
             child_l_plane: child_l_aabb.max[split_axis],
             child_l: Box::new(node_l),
             child_r_plane: child_r_aabb.min[split_axis],
@@ -215,10 +214,10 @@ impl BIHNode {
                             ref child_l,
                             ref child_r_plane,
                             ref child_r } => {
-                if ray.is_left_of_aap(AAP::new(*split_axis as usize, *child_l_plane)) {
+                if ray.is_left_of_aap(AAP::new(*split_axis, *child_l_plane)) {
                     child_l.traverse_recursive(ray, indices);
                 }
-                if ray.is_right_of_aap(AAP::new(*split_axis as usize, *child_r_plane)) {
+                if ray.is_right_of_aap(AAP::new(*split_axis, *child_r_plane)) {
                     child_r.traverse_recursive(ray, indices);
                 }
             }
@@ -299,14 +298,28 @@ pub struct BIH {
     pub root: BIHNode,
 }
 
-impl BoundingHierarchy for BIH {
-    fn build<T: Bounded>(shapes: &[T]) -> BIH {
+impl BIH {
+    /// Creates a new [`BIH`] from the `shapes` slice.
+    ///
+    /// [`BIH`]: struct.BIH.html
+    ///
+    /// # Examples
+    ///
+    /// // TODO example
+    ///
+    pub fn build<T: Bounded>(shapes: &[T]) -> BIH {
         let indices = (0..shapes.len()).collect::<Vec<usize>>();
         let (aabb, root) = BIHNode::build(shapes, indices);
         BIH {
             aabb: aabb,
             root: root,
         }
+    }
+}
+
+impl BoundingHierarchy for BIH {
+    fn build<T: Bounded>(shapes: &[T]) -> BIH {
+        BIH::build(shapes)
     }
 
     fn traverse<'a, T: Bounded>(&'a self, ray: &Ray, shapes: &'a [T]) -> Vec<&T> {
