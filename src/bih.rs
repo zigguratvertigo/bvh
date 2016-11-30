@@ -3,7 +3,8 @@
 
 use EPSILON;
 use bounding_hierarchy::BoundingHierarchy;
-use aabb::{AABB, Axis, Bounded};
+use axis::Axis;
+use aabb::{AABB, Bounded};
 use aap::AAP;
 use ray::Ray;
 use std::boxed::Box;
