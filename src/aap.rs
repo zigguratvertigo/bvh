@@ -1,6 +1,6 @@
 //! Axis Aligned Planes.
 
-use aabb::Axis;
+use axis::Axis;
 use nalgebra::Point3;
 use std::f32;
 
