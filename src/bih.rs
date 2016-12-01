@@ -266,14 +266,6 @@ impl BIHNode {
                     child_r.traverse_recursive(&new_ray, new_max_distance, indices);
                 }
 
-                // if ray.is_left_of_aap(AAP::new(*split_axis, *child_l_plane)) {
-                //     print!("left ({} -> {}) ", *split_axis as u32, child_l_plane);
-                //     child_l.traverse_recursive(ray, indices);
-                // }
-                // if ray.is_right_of_aap(AAP::new(*split_axis, *child_r_plane)) {
-                //     print!("right ({} -> {}) ", *split_axis as u32, child_l_plane);
-                //     child_r.traverse_recursive(ray, indices);
-                // }
                 // print!("END ");
             }
             BIHNode::Leaf { ref shapes } => {
@@ -384,14 +376,7 @@ impl BoundingHierarchy for BIH {
         let mut max_distance = f32::INFINITY;
 
         if ray.intersects_aabb(&self.aabb) {
-            // TODO Calculate useful max_distance based on AABB
-            //     for axis in 0..3 {
-            //         let origin = ray.origin[axis];
-            //         let direction = ray.direction[];
-            //     }
-            // }
-
-            // if max_distance != f32::INFINITY {
+            let max_distance = ray.distance_to_aabb_end(&self.aabb);
             let mut indices = Vec::new();
             self.root.traverse_recursive(ray, max_distance, &mut indices);
             for index in &indices {

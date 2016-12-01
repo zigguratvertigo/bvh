@@ -242,6 +242,44 @@ impl Ray {
         tmax >= tmin && tmax >= 0.0
     }
 
+    /// Returns how long the [`Ray`] travels before it leaves the given [`AABB`].
+    /// Reasonable results require ray.intersects_aabb(aabb) to return `true`.
+    ///
+    /// # Examples
+    /// ```
+    /// use bvh::aabb::AABB;
+    /// use bvh::ray::Ray;
+    /// use bvh::nalgebra::{Point3,Vector3};
+    ///
+    /// let origin = Point3::new(0.0,0.0,0.0);
+    /// let direction = Vector3::new(1.0,0.0,0.0);
+    /// let ray = Ray::new(origin, direction);
+    ///
+    /// let point1 = Point3::new(-1.0,-1.0,-1.0);
+    /// let point2 = Point3::new(1.0,1.0,1.0);
+    /// let aabb = AABB::with_bounds(point1, point2);
+    ///
+    /// let epsilon = 0.000001f32;
+    ///
+    /// let distance = ray.distance_to_aabb_end(&aabb);
+    /// assert!((distance - 1.0).abs() < epsilon);
+    /// ```
+    ///
+    /// [`Ray`]: struct.Ray.html
+    /// [`AABB`]: struct.AABB.html
+    ///
+    pub fn distance_to_aabb_end(&self, aabb: &AABB) -> f32 {
+        let mut min_distance = INFINITY;
+        for axis in 0..3 {
+            let origin = self.origin[axis];
+            let far_side = aabb[1 - self.sign[axis]][axis];
+            let distance = (origin - far_side).abs();
+            let ray_distance = distance / self.direction[axis];
+
+            min_distance = min_distance.min(ray_distance);
+        }
+        min_distance
+    }
 
     /// Tests the intersection of a [`Ray`] with an [`AAP`].
     ///
