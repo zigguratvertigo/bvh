@@ -6,7 +6,6 @@ use bounding_hierarchy::BoundingHierarchy;
 use axis::Axis;
 use aabb::{AABB, Bounded};
 // use aap::AAP;
-use std::cmp::{min, max};
 use ray::Ray;
 use std::boxed::Box;
 use std::f32;
@@ -216,7 +215,6 @@ impl BIHNode {
                             ref child_l,
                             ref child_r_plane,
                             ref child_r } => {
-                // print!("inner node ");
                 let origin = ray.origin[*split_axis];
                 let direction = ray.direction[*split_axis];
                 let direction_goes_right = direction >= 0.0;
@@ -226,6 +224,7 @@ impl BIHNode {
 
                 if origin < *child_l_plane {
                     // Ray starts inside left side
+                    // print!("left-{} ", *split_axis);
                     // print!("left ");
 
                     let new_max_distance = if direction_goes_right {
@@ -237,7 +236,8 @@ impl BIHNode {
                 } else if !direction_goes_right &&
                           origin_distance_l <= max_distance * direction.abs() {
                     // Ray enters left side
-                    // print!("left& ");
+                    // print!("left&-{} ", *split_axis);
+                    // print!("left ");
 
                     let origin_delta = origin_distance_l / direction;
                     let new_ray = Ray::new_with_moved_origin(ray, origin_delta);
@@ -247,6 +247,7 @@ impl BIHNode {
 
                 if origin > *child_r_plane {
                     // Ray starts inside right side
+                    // print!("right-{} ", *split_axis);
                     // print!("right ");
 
                     let new_max_distance = if !direction_goes_right {
@@ -258,7 +259,8 @@ impl BIHNode {
                 } else if direction_goes_right &&
                           origin_distance_r <= max_distance * direction.abs() {
                     // Ray enters right side
-                    // print!("right& ");
+                    // print!("right&-{} ", *split_axis);
+                    // print!("right ");
 
                     let origin_delta = origin_distance_r / direction;
                     let new_ray = Ray::new_with_moved_origin(ray, origin_delta);
@@ -373,12 +375,13 @@ impl BoundingHierarchy for BIH {
     fn traverse<'a, T: Bounded>(&'a self, ray: &Ray, shapes: &'a [T]) -> Vec<&T> {
         // println!("BIH BIH BIH BIH");
         let mut hit_shapes = Vec::new();
-        let mut max_distance = f32::INFINITY;
 
         if ray.intersects_aabb(&self.aabb) {
             let max_distance = ray.distance_to_aabb_end(&self.aabb);
             let mut indices = Vec::new();
+
             self.root.traverse_recursive(ray, max_distance, &mut indices);
+
             for index in &indices {
                 let shape = &shapes[*index];
                 if ray.intersects_aabb(&shape.aabb()) {

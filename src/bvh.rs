@@ -199,7 +199,6 @@ impl BVHNode {
     pub fn traverse_recursive(&self, ray: &Ray, indices: &mut Vec<usize>) {
         match *self {
             BVHNode::Node { ref child_l_aabb, ref child_l, ref child_r_aabb, ref child_r } => {
-                // print!("inner node ");
                 if ray.intersects_aabb(child_l_aabb) {
                     // print!("left ");
                     child_l.traverse_recursive(ray, indices);
