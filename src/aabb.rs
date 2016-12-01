@@ -3,6 +3,7 @@
 use nalgebra::{Point3, Vector3};
 use std::f32;
 use std::ops::Index;
+use std::fmt::{Display, Formatter, Result};
 use axis::Axis;
 
 /// AABB struct.
@@ -348,7 +349,8 @@ impl AABB {
     ///
     /// # Examples
     /// ```
-    /// use bvh::aabb::{AABB, Axis};
+    /// use bvh::axis::Axis;
+    /// use bvh::aabb::AABB;
     /// use bvh::nalgebra::Point3;
     ///
     /// let min = Point3::new(-100.0,0.0,0.0);
@@ -455,6 +457,21 @@ impl Bounded for AABB {
 impl Bounded for Point3<f32> {
     fn aabb(&self) -> AABB {
         AABB::with_bounds(*self, *self)
+    }
+}
+
+/// TODO comment
+///
+impl Display for AABB {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f,
+               "(X: {} <> {}, Y: {} <> {}, Z: {} <> {})",
+               self.min.x,
+               self.max.x,
+               self.min.y,
+               self.max.y,
+               self.min.z,
+               self.max.z,)
     }
 }
 

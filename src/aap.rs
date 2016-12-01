@@ -20,7 +20,7 @@ impl AAP {
     /// # Examples
     /// ```
     /// use bvh::aap::AAP;
-    /// use bvh::aabb::Axis;
+    /// use bvh::axis::Axis;
     ///
     /// let aap = AAP::new(Axis::X, 10.0);
     /// // TODO Finish example
