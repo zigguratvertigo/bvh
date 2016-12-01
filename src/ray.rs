@@ -242,6 +242,7 @@ impl Ray {
         tmax >= tmin && tmax >= 0.0
     }
 
+
     /// Tests the intersection of a [`Ray`] with an [`AAP`].
     ///
     /// # Examples
@@ -314,6 +315,30 @@ impl Ray {
     ///
     pub fn is_right_of_aap(&self, aap: AAP) -> bool {
         aap.has_point_to_right(&self.origin) || self.direction[aap.axis()] > 0.0
+    }
+
+    // // TODO think of better name
+    // /// Creates a new [`Ray`] that is on the same line as the given [`Ray`],
+    // /// but has its origin moved onto the given [`AAP`].
+    // ///
+    // pub fn new_from_aap(ray: &Ray, aap: AAP) -> Ray {
+    //     // Distance between ray origin and plane
+    //     let origin_distance = aap.offset - ray.origin[aap.axis()];
+    //     // How far along the ray's direction we have to move the origin
+    //     let origin_delta = origin_distance / ray.direction[aap.axis()];
+    //     Ray::new(ray.origin + (origin_delta * ray.direction), ray.direction)
+    // }
+
+    /// Creates a new [`Ray`] that is on the same line as the given [`Ray`],
+    /// but has its origin moved along the direction by `offset`.
+    ///
+    pub fn new_with_moved_origin(ray: &Ray, offset: f32) -> Ray {
+        Ray {
+            origin: ray.origin + (offset * ray.direction),
+            direction: ray.direction,
+            inv_direction: ray.inv_direction,
+            sign: ray.sign,
+        }
     }
 
     /// Implementation of the [Möller-Trumbore triangle/ray intersection algorithm]

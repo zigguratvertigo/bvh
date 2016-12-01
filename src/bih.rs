@@ -5,7 +5,8 @@ use EPSILON;
 use bounding_hierarchy::BoundingHierarchy;
 use axis::Axis;
 use aabb::{AABB, Bounded};
-use aap::AAP;
+// use aap::AAP;
+use std::cmp::{min, max};
 use ray::Ray;
 use std::boxed::Box;
 use std::f32;
@@ -208,21 +209,75 @@ impl BIHNode {
     /// [`BIH`]: struct.BIH.html
     /// [`Vec`]: https://doc.rust-lang.org/std/vec/struct.Vec.html
     ///
-    pub fn traverse_recursive(&self, ray: &Ray, indices: &mut Vec<usize>) {
+    pub fn traverse_recursive(&self, ray: &Ray, max_distance: f32, indices: &mut Vec<usize>) {
         match *self {
             BIHNode::Node { ref split_axis,
                             ref child_l_plane,
                             ref child_l,
                             ref child_r_plane,
                             ref child_r } => {
-                if ray.is_left_of_aap(AAP::new(*split_axis, *child_l_plane)) {
-                    child_l.traverse_recursive(ray, indices);
+                // print!("inner node ");
+                let origin = ray.origin[*split_axis];
+                let direction = ray.direction[*split_axis];
+                let direction_goes_right = direction >= 0.0;
+                // Distance between origin and planes
+                let origin_distance_l = child_l_plane - origin;
+                let origin_distance_r = child_r_plane - origin;
+
+                if origin < *child_l_plane {
+                    // Ray starts inside left side
+                    // print!("left ");
+
+                    let new_max_distance = if direction_goes_right {
+                        (origin_distance_l / direction).abs()
+                    } else {
+                        max_distance
+                    };
+                    child_l.traverse_recursive(ray, new_max_distance, indices);
+                } else if !direction_goes_right &&
+                          origin_distance_l <= max_distance * direction.abs() {
+                    // Ray enters left side
+                    // print!("left& ");
+
+                    let origin_delta = origin_distance_l / direction;
+                    let new_ray = Ray::new_with_moved_origin(ray, origin_delta);
+                    let new_max_distance = max_distance - origin_delta.abs();
+                    child_l.traverse_recursive(&new_ray, new_max_distance, indices);
                 }
-                if ray.is_right_of_aap(AAP::new(*split_axis, *child_r_plane)) {
-                    child_r.traverse_recursive(ray, indices);
+
+                if origin > *child_r_plane {
+                    // Ray starts inside right side
+                    // print!("right ");
+
+                    let new_max_distance = if !direction_goes_right {
+                        (origin_distance_r / direction).abs()
+                    } else {
+                        max_distance
+                    };
+                    child_r.traverse_recursive(ray, new_max_distance, indices);
+                } else if direction_goes_right &&
+                          origin_distance_r <= max_distance * direction.abs() {
+                    // Ray enters right side
+                    // print!("right& ");
+
+                    let origin_delta = origin_distance_r / direction;
+                    let new_ray = Ray::new_with_moved_origin(ray, origin_delta);
+                    let new_max_distance = max_distance - origin_delta.abs();
+                    child_r.traverse_recursive(&new_ray, new_max_distance, indices);
                 }
+
+                // if ray.is_left_of_aap(AAP::new(*split_axis, *child_l_plane)) {
+                //     print!("left ({} -> {}) ", *split_axis as u32, child_l_plane);
+                //     child_l.traverse_recursive(ray, indices);
+                // }
+                // if ray.is_right_of_aap(AAP::new(*split_axis, *child_r_plane)) {
+                //     print!("right ({} -> {}) ", *split_axis as u32, child_l_plane);
+                //     child_r.traverse_recursive(ray, indices);
+                // }
+                // print!("END ");
             }
             BIHNode::Leaf { ref shapes } => {
+                // print!("LEAF ");
                 for index in shapes {
                     indices.push(*index);
                 }
@@ -324,10 +379,21 @@ impl BoundingHierarchy for BIH {
     }
 
     fn traverse<'a, T: Bounded>(&'a self, ray: &Ray, shapes: &'a [T]) -> Vec<&T> {
+        // println!("BIH BIH BIH BIH");
         let mut hit_shapes = Vec::new();
+        let mut max_distance = f32::INFINITY;
+
         if ray.intersects_aabb(&self.aabb) {
+            // TODO Calculate useful max_distance based on AABB
+            //     for axis in 0..3 {
+            //         let origin = ray.origin[axis];
+            //         let direction = ray.direction[];
+            //     }
+            // }
+
+            // if max_distance != f32::INFINITY {
             let mut indices = Vec::new();
-            self.root.traverse_recursive(ray, &mut indices);
+            self.root.traverse_recursive(ray, max_distance, &mut indices);
             for index in &indices {
                 let shape = &shapes[*index];
                 if ray.intersects_aabb(&shape.aabb()) {
@@ -335,6 +401,8 @@ impl BoundingHierarchy for BIH {
                 }
             }
         }
+        // println!("");
+        // println!("BIH BIH BIH BIH");
         hit_shapes
     }
 
@@ -370,6 +438,12 @@ pub mod tests {
 
         test_traverse_aligned_boxes(&bih, &shapes);
     }
+
+    // #[bench]
+    // /// Benchmark the construction of a BIH with 1,200 triangles.
+    // fn bench_build_48_triangles_bih(mut b: &mut ::test::Bencher) {
+    //     bench_intersect_n_triangles::<BIH>(4, &mut b);
+    // }
 
     #[bench]
     /// Benchmark the construction of a BIH with 1,200 triangles.

@@ -37,6 +37,8 @@ pub fn test_ray_intersects_boxes<T: BoundingHierarchy>(structure: &T,
                                                        dir: Vector3<f32>,
                                                        shapes: &[UnitBox],
                                                        ids: &[i32]) {
+    // structure.pretty_print();
+
     // Create the ray.
     let ray = Ray::new(pos, dir);
 
@@ -141,10 +143,10 @@ fn splitmix64(x: &mut u64) -> u64 {
 /// Generates a new Point3, mutates the seed.
 fn next_point3(seed: &mut u64) -> Point3<f32> {
     let u = splitmix64(seed);
-    let a = (u >> 48 & 0xFFFFFFFF) as i32 - 0xFFFF;
-    let b = (u >> 48 & 0xFFFFFFFF) as i32 - 0xFFFF;
+    let a = (((u >> 32) & 0xFFFFFFFF) as i32).wrapping_sub(0xFFFF);
+    let b = ((u & 0xFFFFFFFF) as i32).wrapping_sub(0xFFFF);
     let c = a ^ b.rotate_left(6);
-    Point3::new(a as f32, b as f32, c as f32)
+    Point3::new((a % 1000) as f32, (b % 1000) as f32, (c % 1000) as f32)
 }
 
 /// Creates `n` deterministic random cubes. Returns the `Vec` of surface `Triangle`s.
@@ -228,6 +230,10 @@ pub fn bench_intersect_n_triangles<T: BoundingHierarchy>(n: u64, b: &mut ::test:
     let triangles = create_n_cubes(n);
     let structure = T::build(&triangles);
     let mut seed = 0;
+
+    // if n <= 50 {
+    //     structure.pretty_print();
+    // }
 
     b.iter(|| {
         let ray = create_ray(&mut seed);

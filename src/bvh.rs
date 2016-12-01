@@ -178,10 +178,10 @@ impl BVHNode {
     fn pretty_print(&self, depth: usize) {
         let padding: String = repeat(" ").take(depth).collect();
         match *self {
-            BVHNode::Node { ref child_l, ref child_r, .. } => {
-                println!("{}child_l", padding);
+            BVHNode::Node { ref child_l, ref child_r, ref child_l_aabb, ref child_r_aabb } => {
+                println!("{}child_l ({})", padding, child_l_aabb);
                 child_l.pretty_print(depth + 1);
-                println!("{}child_r", padding);
+                println!("{}child_r ({})", padding, child_r_aabb);
                 child_r.pretty_print(depth + 1);
             }
             BVHNode::Leaf { ref shapes } => {
@@ -199,14 +199,19 @@ impl BVHNode {
     pub fn traverse_recursive(&self, ray: &Ray, indices: &mut Vec<usize>) {
         match *self {
             BVHNode::Node { ref child_l_aabb, ref child_l, ref child_r_aabb, ref child_r } => {
+                // print!("inner node ");
                 if ray.intersects_aabb(child_l_aabb) {
+                    // print!("left ");
                     child_l.traverse_recursive(ray, indices);
                 }
                 if ray.intersects_aabb(child_r_aabb) {
+                    // print!("right ");
                     child_r.traverse_recursive(ray, indices);
                 }
+                // print!("END ");
             }
             BVHNode::Leaf { ref shapes } => {
+                // print!("LEAF ");
                 for index in shapes {
                     indices.push(*index);
                 }
@@ -250,6 +255,7 @@ impl BoundingHierarchy for BVH {
     }
 
     fn traverse<'a, T: Bounded>(&'a self, ray: &Ray, shapes: &'a [T]) -> Vec<&T> {
+        // println!("BVH BVH BVH BVH");
         let mut indices = Vec::new();
         self.root.traverse_recursive(ray, &mut indices);
         let mut hit_shapes = Vec::new();
@@ -259,6 +265,8 @@ impl BoundingHierarchy for BVH {
                 hit_shapes.push(shape);
             }
         }
+        // println!("");
+        // println!("BVH BVH BVH BVH");
         hit_shapes
     }
 
@@ -294,6 +302,12 @@ pub mod tests {
 
         test_traverse_aligned_boxes(&bvh, &shapes);
     }
+
+    // #[bench]
+    // /// Benchmark the construction of a BIH with 1,200 triangles.
+    // fn bench_build_48_triangles_bvh(mut b: &mut ::test::Bencher) {
+    //     bench_intersect_n_triangles::<BVH>(4, &mut b);
+    // }
 
     #[bench]
     /// Benchmark the construction of a `BVH` with 1,200 triangles.
