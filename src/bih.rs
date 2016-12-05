@@ -7,6 +7,7 @@ use axis::Axis;
 use aabb::{AABB, Bounded};
 // use aap::AAP;
 use ray::Ray;
+use raycast::{Intersectable, RaycastResult};
 use std::boxed::Box;
 use std::f32;
 use std::iter::repeat;
@@ -216,7 +217,7 @@ impl BIHNode {
                             ref child_r_plane,
                             ref child_r } => {
                 let origin = ray.origin[*split_axis];
-                let direction = ray.direction[*split_axis];
+                let direction = ray.direction()[*split_axis];
                 let direction_goes_right = direction >= 0.0;
                 // Distance between origin and planes
                 let origin_distance_l = child_l_plane - origin;
@@ -279,63 +280,96 @@ impl BIHNode {
         }
     }
 
-    // /// TODO proper comment
-    // /// Gets the index of the first shape that the passed function considers intersected.
-    // /// This function benefits from the fact that when using BIHs,
-    // /// we know which child node a ray traverses first.
-    // ///
-    // pub fn get_first_intersection<'a, F>(&self, ray: &Ray, intersection_checker: &F) -> usize
-    //     where F: Fn(&Ray, usize) -> bool {
-    //     struct TraversalBranch<'a> {
-    //         node: &'a BIHNode,
-    //         aap: AAP,
-    //     }
-    //     // Inner recursive function
-    //     fn get_first_intersection_inner<'a>(node: &'a BIHNode, ray: &'a Ray, stack: &'a mut Vec<TraversalBranch<'a>>) -> usize {
-    //         match *node {
-    //             BIHNode::Node { ref split_axis, ref child_l_plane, ref child_l, ref child_r_plane, ref child_r } => {
-    //                 let mut result = usize::max_value();
-    //
-    //                 let axis = *split_axis as usize;
-    //                 let origin = ray.origin[axis];
-    //                 let direction = ray.direction[axis];
-    //                 if direction == 0.0 {
-    //                     // Check both sides unbiased (how??)
-    //                 } else {
-    //                     let left_plane = AAP::new(axis, *child_l_plane);
-    //                     let right_plane = AAP::new(axis, *child_r_plane);
-    //                     // If the ray goes right...
-    //                     if direction > 0.0 {
-    //                         // ...check the left volume first
-    //                         if origin < *child_l_plane {
-    //                             // Put the right side on the stack for later
-    //                             stack.push(TraversalBranch{node: child_l, aap: left_plane});
-    //                             // Traverse the left side
-    //
-    //                         } else {
-    //                             // Traverse the right side
-    //                         }
-    //                     } else {
-    //                         // Otherwise, check the right volume first
-    //                         if origin > *child_r_plane {
-    //                             // Put the left side on the stack for later
-    //                             // Traverse the right side
-    //                         } else {
-    //                             // Traverse the left side
-    //                         }
-    //                     }
-    //                 }
-    //                 result
-    //             }
-    //             BIHNode::Leaf { ref shape } => {
-    //                 if |ray, shape|{ intersection_checker(&ray, *shape) } { *shape } else { usize::max_value() }
-    //             }
-    //         }
-    //     }
-    //
-    //     let mut stack = Vec::new();
-    //     get_first_intersection_inner(&self, ray, &mut stack)
-    // }
+    /// TODO proper comment
+    /// Gets the index of the first shape that the passed function considers intersected.
+    /// This function benefits from the fact that when using BIHs,
+    /// we know which child node a ray traverses first.
+    ///
+    pub fn calculate_first_intersected<'a, T: Intersectable>(&'a self,
+                                                             ray: &'a Ray,
+                                                             max_distance: f32,
+                                                             all_shapes: &'a [T])
+                                                             -> Option<&'a T> {
+        // struct TraversalBranch<'a> {
+        //     node: &'a BIHNode,
+        //     aap: AAP,
+        // }
+        // Inner recursive function
+        fn calculate_first_intersected_traverse<'a, T: Intersectable>(node: &'a BIHNode,
+                                                                      ray: &'a Ray,
+                                                                      max_distance: f32,
+                                                                      all_shapes: &'a [T])
+                                                                      -> Option<&'a T> {
+            match *node {
+                BIHNode::Node { ref split_axis,
+                                ref child_l_plane,
+                                ref child_l,
+                                ref child_r_plane,
+                                ref child_r } => {
+                    unimplemented!();
+                    // let axis = *split_axis as usize;
+                    // let origin = ray.origin[axis];
+                    // let direction = ray.direction[axis];
+                    // if direction == 0.0 {
+                    //     // Check both sides unbiased (how??)
+                    // } else {
+                    //     let left_plane = AAP::new(axis, *child_l_plane);
+                    //     let right_plane = AAP::new(axis, *child_r_plane);
+                    //     // If the ray goes right...
+                    //     if direction > 0.0 {
+                    //         // ...check the left volume first
+                    //         if origin < *child_l_plane {
+                    //             // Put the right side on the stack for later
+                    //             // stack.push(TraversalBranch {
+                    //             //     node: child_l,
+                    //             //     aap: left_plane,
+                    //             // });
+                    //             // Traverse the left side
+                    //
+                    //         } else {
+                    //             // Traverse the right side
+                    //         }
+                    //     } else {
+                    //         // Otherwise, check the right volume first
+                    //         if origin > *child_r_plane {
+                    //             // Put the left side on the stack for later
+                    //             // Traverse the right side
+                    //         } else {
+                    //             // Traverse the left side
+                    //         }
+                    //     }
+                    // }
+
+                    // None
+                }
+                BIHNode::Leaf { ref shapes } => {
+                    let mut result = None;
+                    let mut distance = f32::INFINITY;
+
+                    for index in shapes {
+                        let ref shape = all_shapes[*index];
+                        let test_distance = match shape.intersection(&ray) {
+                            RaycastResult::Hit { distance } => distance,
+                            RaycastResult::Miss => f32::INFINITY,
+                        };
+                        if test_distance < distance {
+                            result = Some(shape);
+                            distance = test_distance;
+                        }
+                    }
+                    result
+                }
+            }
+        }
+
+        // let mut stack = Vec::new();
+        calculate_first_intersected_traverse(self,
+                                             ray,
+                                             max_distance,
+                                             all_shapes
+                                             // &mut stack,
+                                         )
+    }
 }
 
 /// TODO comment
@@ -376,7 +410,7 @@ impl BoundingHierarchy for BIH {
         // println!("BIH BIH BIH BIH");
         let mut hit_shapes = Vec::new();
 
-        if ray.intersects_aabb(&self.aabb) {
+        if self.aabb.does_intersect(ray) {
             let max_distance = ray.distance_to_aabb_end(&self.aabb);
             let mut indices = Vec::new();
 
@@ -384,7 +418,7 @@ impl BoundingHierarchy for BIH {
 
             for index in &indices {
                 let shape = &shapes[*index];
-                if ray.intersects_aabb(&shape.aabb()) {
+                if shape.aabb().does_intersect(ray) {
                     hit_shapes.push(shape);
                 }
             }
@@ -399,10 +433,33 @@ impl BoundingHierarchy for BIH {
     }
 }
 
+impl BIH {
+    /// Returns the first shape hit by the given [`Ray`].
+    ///
+    pub fn get_first_hit<'a, T: Bounded + Intersectable>(&'a self,
+                                                     ray: &'a Ray,
+                                                     shapes: &'a [T])
+                                                     -> Option<&'a T> {
+        // println!("BIH BIH BIH BIH");
+        if self.aabb.does_intersect(ray) {
+            let max_distance = ray.distance_to_aabb_end(&self.aabb);
+
+            self.root
+                .calculate_first_intersected(ray, max_distance, shapes)
+        } else {
+            None
+        }
+        // println!("");
+        // println!("BIH BIH BIH BIH");
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
+    use nalgebra::{Point3, Vector3};
     use bounding_hierarchy::BoundingHierarchy;
     use bih::BIH;
+    use ray::Ray;
     use testbase::*;
 
     /// Creates a `BIH` for a fixed scene structure.
@@ -425,6 +482,26 @@ pub mod tests {
         let (shapes, bih) = build_some_bih();
 
         test_traverse_aligned_boxes(&bih, &shapes);
+    }
+
+    #[test]
+    /// Runs traverse tests, but using get_first_hit instead of traverse_recursive
+    fn test_traverse_bih_first_hit() {
+        let (shapes, bih) = build_some_bih();
+
+        // fn intersection_checker(ray: &Ray, triangle: &Triangle) {
+        //     ray.intersects_triangle(&triangle.a, &triangle.b, &triangle.c)
+        // }
+
+        let position = Point3::new(-1000.0, 0.0, 0.0);
+        let direction = Vector3::new(1.0, 0.0, 0.0);
+        let ray = Ray::new(position, direction);
+
+        let hit = bih.get_first_hit(&ray, &shapes);
+        match hit {
+            Some(unit_box) => assert!(unit_box.pos.x < -9.99f32),
+            None => assert!(false),
+        }
     }
 
     // #[bench]

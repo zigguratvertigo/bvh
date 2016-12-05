@@ -2,8 +2,10 @@
 use aabb::{AABB, Bounded};
 use nalgebra::{Point3, Vector3};
 use ray::Ray;
+use raycast::{Intersectable, RaycastResult};
 use std::collections::HashSet;
 use bounding_hierarchy::BoundingHierarchy;
+use triangle::Triangle;
 
 /// Define some Bounded structure.
 pub struct UnitBox {
@@ -17,6 +19,12 @@ impl Bounded for UnitBox {
         let min = self.pos + Vector3::new(-0.5, -0.5, -0.5);
         let max = self.pos + Vector3::new(0.5, 0.5, 0.5);
         AABB::with_bounds(min, max)
+    }
+}
+
+impl Intersectable for UnitBox {
+    fn intersection(&self, ray: &Ray) -> RaycastResult {
+        self.aabb().intersection(ray)
     }
 }
 
@@ -78,31 +86,6 @@ pub fn test_traverse_aligned_boxes<T: BoundingHierarchy>(structure: &T, shapes: 
     let direction = Vector3::new(-2.0, -1.0, 0.0);
     let ids = [4, 5, 6];
     test_ray_intersects_boxes(structure, position, direction, shapes, &ids);
-}
-
-/// A triangle struct. Instance of a more complex `Bounded` primitive.
-pub struct Triangle {
-    pub a: Point3<f32>,
-    pub b: Point3<f32>,
-    pub c: Point3<f32>,
-    aabb: AABB,
-}
-
-impl Triangle {
-    fn new(a: Point3<f32>, b: Point3<f32>, c: Point3<f32>) -> Triangle {
-        Triangle {
-            a: a,
-            b: b,
-            c: c,
-            aabb: AABB::empty().grow(&a).grow(&b).grow(&c),
-        }
-    }
-}
-
-impl Bounded for Triangle {
-    fn aabb(&self) -> AABB {
-        self.aabb
-    }
 }
 
 /// Creates a unit size cube centered at `pos` and pushes the triangles to `shapes`.

@@ -5,6 +5,8 @@ use std::f32;
 use std::ops::Index;
 use std::fmt::{Display, Formatter, Result};
 use axis::Axis;
+use ray::Ray;
+use raycast::{Intersectable, RaycastResult};
 
 /// AABB struct.
 #[derive(Debug, Copy, Clone)]
@@ -457,6 +459,86 @@ impl Bounded for AABB {
 impl Bounded for Point3<f32> {
     fn aabb(&self) -> AABB {
         AABB::with_bounds(*self, *self)
+    }
+}
+
+/// Intersections between [`Ray`]s and [`AABB`]s.
+///
+/// [`AABB`]: struct.AABB.html
+/// [`Ray`]: struct.Ray.html
+///
+impl Intersectable for AABB {
+    /// Tests the intersection of a [`Ray`] with an [`AABB`] using the optimized algorithm
+    /// from [this paper](http://www.cs.utah.edu/~awilliam/box/box.pdf).
+    fn does_intersect(&self, ray: &Ray) -> bool {
+        let mut ray_min = (self[ray.sign().x].x - ray.origin.x) * ray.inv_direction().x;
+        let mut ray_max = (self[1 - ray.sign().x].x - ray.origin.x) * ray.inv_direction().x;
+
+        let y_min = (self[ray.sign().y].y - ray.origin.y) * ray.inv_direction().y;
+        let y_max = (self[1 - ray.sign().y].y - ray.origin.y) * ray.inv_direction().y;
+
+        if (ray_min > y_max) || (y_min > ray_max) {
+            return false;
+        }
+
+        if y_min > ray_min {
+            ray_min = y_min;
+        }
+        // Using the following solution significantly decreases the performance
+        // ray_min = ray_min.max(y_min);
+
+        if y_max < ray_max {
+            ray_max = y_max;
+        }
+        // Using the following solution significantly decreases the performance
+        // ray_max = ray_max.min(y_max);
+
+        let z_min = (self[ray.sign().z].z - ray.origin.z) * ray.inv_direction().z;
+        let z_max = (self[1 - ray.sign().z].z - ray.origin.z) * ray.inv_direction().z;
+
+        if (ray_min > z_max) || (z_min > ray_max) {
+            return false;
+        }
+
+        // Only required for bounded intersection intervals.
+        // if z_min > ray_min {
+        // ray_min = z_min;
+        // }
+
+        if z_max < ray_max {
+            ray_max = z_max;
+        }
+        // Using the following solution significantly decreases the performance
+        // ray_max = ray_max.min(y_max);
+
+        ray_max > 0.0
+    }
+
+    fn intersection(&self, ray: &Ray) -> RaycastResult {
+        let hit_min_x = (self.min.x - ray.origin.x) * ray.inv_direction().x;
+        let hit_max_x = (self.max.x - ray.origin.x) * ray.inv_direction().x;
+
+        let hit_min_y = (self.min.y - ray.origin.y) * ray.inv_direction().y;
+        let hit_max_y = (self.max.y - ray.origin.y) * ray.inv_direction().y;
+
+        let hit_min_z = (self.min.z - ray.origin.z) * ray.inv_direction().z;
+        let hit_max_z = (self.max.z - ray.origin.z) * ray.inv_direction().z;
+
+        let x_entry = hit_min_x.min(hit_max_x);
+        let y_entry = hit_min_y.min(hit_max_y);
+        let z_entry = hit_min_z.min(hit_max_z);
+        let x_exit = hit_min_x.max(hit_max_x);
+        let y_exit = hit_min_y.max(hit_max_y);
+        let z_exit = hit_min_z.max(hit_max_z);
+
+        let latest_entry = x_entry.max(y_entry).max(z_entry);
+        let earliest_exit = x_exit.min(y_exit).min(z_exit);
+
+        if latest_entry < earliest_exit && earliest_exit > 0.0 {
+            RaycastResult::hit(latest_entry)
+        } else {
+            RaycastResult::Miss
+        }
     }
 }
 

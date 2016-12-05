@@ -82,5 +82,7 @@ pub mod bvh;
 pub mod aap;
 pub mod bih;
 pub mod ray;
+pub mod raycast;
+pub mod triangle;
 #[cfg(test)]
 mod testbase;

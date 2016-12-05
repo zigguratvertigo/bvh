@@ -1,11 +1,9 @@
-//! This module defines a Ray structure and intersection algorithms
-//! for axis aligned bounding boxes and triangles.
+//! This module defines a Ray structure.
 
 use aabb::AABB;
 use aap::AAP;
-use nalgebra::{Vector3, Point3, Norm, Cross, Dot};
+use nalgebra::{Vector3, Point3, Norm};
 use std::f32::INFINITY;
-use EPSILON;
 
 /// A struct which defines a ray and some of its cached values.
 #[derive(Debug)]
@@ -14,7 +12,7 @@ pub struct Ray {
     pub origin: Point3<f32>,
 
     /// The ray direction.
-    pub direction: Vector3<f32>,
+    direction: Vector3<f32>,
 
     /// Inverse (1/x) ray direction. Cached for use in [`AABB`] intersections.
     ///
@@ -28,30 +26,6 @@ pub struct Ray {
     /// [`AABB`]: struct.AABB.html
     ///
     sign: Vector3<usize>,
-}
-
-/// A struct which is returned by the `intersects_triangle` method.
-pub struct Intersection {
-    /// Distance from the ray origin to the intersection point.
-    pub distance: f32,
-
-    /// U coordinate of the intersection.
-    pub u: f32,
-
-    /// V coordinate of the intersection.
-    pub v: f32,
-}
-
-impl Intersection {
-    /// Constructs an `Intersection`. `distance` should be set to positive infinity,
-    /// if the intersection does not occur.
-    pub fn new(distance: f32, u: f32, v: f32) -> Intersection {
-        Intersection {
-            distance: distance,
-            u: u,
-            v: v,
-        }
-    }
 }
 
 impl Ray {
@@ -85,161 +59,24 @@ impl Ray {
         }
     }
 
-    /// Tests the intersection of a [`Ray`] with an [`AABB`] using the optimized algorithm
-    /// from [this paper](http://www.cs.utah.edu/~awilliam/box/box.pdf).
+    /// Returns the [`Ray`]'s direction.
     ///
-    /// # Examples
-    /// ```
-    /// use bvh::aabb::AABB;
-    /// use bvh::ray::Ray;
-    /// use bvh::nalgebra::{Point3,Vector3};
-    ///
-    /// let origin = Point3::new(0.0,0.0,0.0);
-    /// let direction = Vector3::new(1.0,0.0,0.0);
-    /// let ray = Ray::new(origin, direction);
-    ///
-    /// let point1 = Point3::new(99.9,-1.0,-1.0);
-    /// let point2 = Point3::new(100.1,1.0,1.0);
-    /// let aabb = AABB::with_bounds(point1, point2);
-    ///
-    /// assert!(ray.intersects_aabb(&aabb));
-    /// ```
-    ///
-    /// [`Ray`]: struct.Ray.html
-    /// [`AABB`]: struct.AABB.html
-    ///
-    pub fn intersects_aabb(&self, aabb: &AABB) -> bool {
-        let mut ray_min = (aabb[self.sign.x].x - self.origin.x) * self.inv_direction.x;
-        let mut ray_max = (aabb[1 - self.sign.x].x - self.origin.x) * self.inv_direction.x;
-
-        let y_min = (aabb[self.sign.y].y - self.origin.y) * self.inv_direction.y;
-        let y_max = (aabb[1 - self.sign.y].y - self.origin.y) * self.inv_direction.y;
-
-        if (ray_min > y_max) || (y_min > ray_max) {
-            return false;
-        }
-
-        if y_min > ray_min {
-            ray_min = y_min;
-        }
-        // Using the following solution significantly decreases the performance
-        // ray_min = ray_min.max(y_min);
-
-        if y_max < ray_max {
-            ray_max = y_max;
-        }
-        // Using the following solution significantly decreases the performance
-        // ray_max = ray_max.min(y_max);
-
-        let z_min = (aabb[self.sign.z].z - self.origin.z) * self.inv_direction.z;
-        let z_max = (aabb[1 - self.sign.z].z - self.origin.z) * self.inv_direction.z;
-
-        if (ray_min > z_max) || (z_min > ray_max) {
-            return false;
-        }
-
-        // Only required for bounded intersection intervals.
-        // if z_min > ray_min {
-        // ray_min = z_min;
-        // }
-
-        if z_max < ray_max {
-            ray_max = z_max;
-        }
-        // Using the following solution significantly decreases the performance
-        // ray_max = ray_max.min(y_max);
-
-        ray_max > 0.0
+    pub fn direction(&self) -> Vector3<f32> {
+        self.direction
     }
 
-    /// Naive implementation of a [`Ray`]/[`AABB`] intersection algorithm.
+    /// Returns the [`Ray`]'s sign vector.
+    /// For each axis, 0 means positive, 1 means negative.
     ///
-    /// # Examples
-    /// ```
-    /// use bvh::aabb::AABB;
-    /// use bvh::ray::Ray;
-    /// use bvh::nalgebra::{Point3,Vector3};
-    ///
-    /// let origin = Point3::new(0.0,0.0,0.0);
-    /// let direction = Vector3::new(1.0,0.0,0.0);
-    /// let ray = Ray::new(origin, direction);
-    ///
-    /// let point1 = Point3::new(99.9,-1.0,-1.0);
-    /// let point2 = Point3::new(100.1,1.0,1.0);
-    /// let aabb = AABB::with_bounds(point1, point2);
-    ///
-    /// assert!(ray.intersects_aabb_naive(&aabb));
-    /// ```
-    ///
-    /// [`Ray`]: struct.Ray.html
-    /// [`AABB`]: struct.AABB.html
-    ///
-    pub fn intersects_aabb_naive(&self, aabb: &AABB) -> bool {
-        let hit_min_x = (aabb.min.x - self.origin.x) * self.inv_direction.x;
-        let hit_max_x = (aabb.max.x - self.origin.x) * self.inv_direction.x;
-
-        let hit_min_y = (aabb.min.y - self.origin.y) * self.inv_direction.y;
-        let hit_max_y = (aabb.max.y - self.origin.y) * self.inv_direction.y;
-
-        let hit_min_z = (aabb.min.z - self.origin.z) * self.inv_direction.z;
-        let hit_max_z = (aabb.max.z - self.origin.z) * self.inv_direction.z;
-
-        let x_entry = hit_min_x.min(hit_max_x);
-        let y_entry = hit_min_y.min(hit_max_y);
-        let z_entry = hit_min_z.min(hit_max_z);
-        let x_exit = hit_min_x.max(hit_max_x);
-        let y_exit = hit_min_y.max(hit_max_y);
-        let z_exit = hit_min_z.max(hit_max_z);
-
-        let latest_entry = x_entry.max(y_entry).max(z_entry);
-        let earliest_exit = x_exit.min(y_exit).min(z_exit);
-
-        latest_entry < earliest_exit && earliest_exit > 0.0
+    pub fn sign(&self) -> Vector3<usize> {
+        self.sign
     }
 
-    /// Implementation of the algorithm described [here]
-    /// (https://tavianator.com/fast-branchless-raybounding-box-intersections/).
+    /// Returns the [`Ray`]'s inverse direction (1/direction).
+    /// This value can be used for efficient division through the direction's components.
     ///
-    /// # Examples
-    /// ```
-    /// use bvh::aabb::AABB;
-    /// use bvh::ray::Ray;
-    /// use bvh::nalgebra::{Point3,Vector3};
-    ///
-    /// let origin = Point3::new(0.0,0.0,0.0);
-    /// let direction = Vector3::new(1.0,0.0,0.0);
-    /// let ray = Ray::new(origin, direction);
-    ///
-    /// let point1 = Point3::new(99.9,-1.0,-1.0);
-    /// let point2 = Point3::new(100.1,1.0,1.0);
-    /// let aabb = AABB::with_bounds(point1, point2);
-    ///
-    /// assert!(ray.intersects_aabb_branchless(&aabb));
-    /// ```
-    ///
-    /// [`Ray`]: struct.Ray.html
-    /// [`AABB`]: struct.AABB.html
-    ///
-    pub fn intersects_aabb_branchless(&self, aabb: &AABB) -> bool {
-        let tx1 = (aabb.min.x - self.origin.x) * self.inv_direction.x;
-        let tx2 = (aabb.max.x - self.origin.x) * self.inv_direction.x;
-
-        let mut tmin = tx1.min(tx2);
-        let mut tmax = tx1.max(tx2);
-
-        let ty1 = (aabb.min.y - self.origin.y) * self.inv_direction.y;
-        let ty2 = (aabb.max.y - self.origin.y) * self.inv_direction.y;
-
-        tmin = tmin.max(ty1.min(ty2));
-        tmax = tmax.min(ty1.max(ty2));
-
-        let tz1 = (aabb.min.z - self.origin.z) * self.inv_direction.z;
-        let tz2 = (aabb.max.z - self.origin.z) * self.inv_direction.z;
-
-        tmin = tmin.max(tz1.min(tz2));
-        tmax = tmax.min(tz1.max(tz2));
-
-        tmax >= tmin && tmax >= 0.0
+    pub fn inv_direction(&self) -> Vector3<f32> {
+        self.inv_direction
     }
 
     /// Returns how long the [`Ray`] travels before it leaves the given [`AABB`].
@@ -274,9 +111,11 @@ impl Ray {
             let origin = self.origin[axis];
             let far_side = aabb[1 - self.sign[axis]][axis];
             let distance = (origin - far_side).abs();
-            let ray_distance = distance / self.direction[axis];
+            let ray_distance = distance * self.inv_direction[axis];
 
-            min_distance = min_distance.min(ray_distance);
+            if min_distance < ray_distance {
+                min_distance = ray_distance
+            }
         }
         min_distance
     }
@@ -370,76 +209,24 @@ impl Ray {
     /// Creates a new [`Ray`] that is on the same line as the given [`Ray`],
     /// but has its origin moved along the direction by `offset`.
     ///
+    /// [`Ray`]: struct.Ray.html
+    ///
     pub fn new_with_moved_origin(ray: &Ray, offset: f32) -> Ray {
         Ray {
-            origin: ray.origin + (offset * ray.direction),
+            origin: ray.point_along_direction(offset),
             direction: ray.direction,
             inv_direction: ray.inv_direction,
             sign: ray.sign,
         }
     }
 
-    /// Implementation of the [Möller-Trumbore triangle/ray intersection algorithm]
-    /// (https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm).
-    /// Returns the distance to the intersection, as well as
-    /// the u and v coordinates of the intersection.
-    /// The distance is set to +INFINITY if the ray does not intersect the triangle, or hits
-    /// it from behind.
-    pub fn intersects_triangle(&self,
-                               a: &Point3<f32>,
-                               b: &Point3<f32>,
-                               c: &Point3<f32>)
-                               -> Intersection {
-        let a_to_b = *b - *a;
-        let a_to_c = *c - *a;
-
-        // Begin calculating determinant - also used to calculate u parameter
-        // u_vec lies in view plane
-        // length of a_to_c in view_plane = |u_vec| = |a_to_c|*sin(a_to_c, dir)
-        let u_vec = self.direction.cross(&a_to_c);
-
-        // If determinant is near zero, ray lies in plane of triangle
-        // The determinant corresponds to the parallelepiped volume:
-        // det = 0 => [dir, a_to_b, a_to_c] not linearly independant
-        let det = a_to_b.dot(&u_vec);
-
-        // Only testing positive bound, thus enabling backface culling
-        // If backface culling is not desired write:
-        // det < EPSILON && det > -EPSILON
-        if det < EPSILON {
-            return Intersection::new(INFINITY, 0.0, 0.0);
-        }
-
-        let inv_det = 1.0 / det;
-
-        // Vector from point a to ray origin
-        let a_to_origin = self.origin - *a;
-
-        // Calculate u parameter
-        let u = a_to_origin.dot(&u_vec) * inv_det;
-
-        // Test bounds: u < 0 || u > 1 => outside of triangle
-        if u < 0.0 || u > 1.0 {
-            return Intersection::new(INFINITY, u, 0.0);
-        }
-
-        // Prepare to test v parameter
-        let v_vec = a_to_origin.cross(&a_to_b);
-
-        // Calculate v parameter and test bound
-        let v = self.direction.dot(&v_vec) * inv_det;
-        // The intersection lies outside of the triangle
-        if v < 0.0 || u + v > 1.0 {
-            return Intersection::new(INFINITY, u, v);
-        }
-
-        let dist = a_to_c.dot(&v_vec) * inv_det;
-
-        if dist > EPSILON {
-            Intersection::new(dist, u, v)
-        } else {
-            Intersection::new(INFINITY, u, v)
-        }
+    /// Calculates the point that is `offset` away from the [`Ray`]'s origin,
+    /// when moving along its direction.
+    ///
+    /// [`Ray`]: struct.Ray.html
+    ///
+    pub fn point_along_direction(&self, offset: f32) -> Point3<f32> {
+        self.origin + (offset * self.direction)
     }
 }
 
@@ -447,8 +234,9 @@ impl Ray {
 mod tests {
     use EPSILON;
     use ray::Ray;
+    use raycast::{Intersectable, RaycastResult};
     use aabb::AABB;
-    use nalgebra::{Point3, Vector3, Cross, Dot};
+    use nalgebra::{Point3, Vector3, Cross, Dot, Norm};
     use rand::{Rng, StdRng, SeedableRng};
     use std::f32::INFINITY;
     use std::cmp;
@@ -466,17 +254,94 @@ mod tests {
     /// Generates a random `Ray` which points at at a random `AABB`.
     fn gen_ray_to_aabb(data: (TupleVec, TupleVec, TupleVec)) -> (Ray, AABB) {
         // Generate a random AABB
-        let aabb = AABB::empty()
+        let mut aabb = AABB::empty()
             .grow(&tuple_to_point(&data.0))
             .grow(&tuple_to_point(&data.1));
+
+        if aabb.surface_area() < EPSILON {
+            aabb = aabb.grow(&(aabb.center() + Vector3::new(1.0, 1.0, 1.0)));
+        }
 
         // Get its center
         let center = aabb.center();
 
         // Generate random ray pointing at the center
-        let pos = tuple_to_point(&data.2);
-        let ray = Ray::new(pos, center - pos);
-        (ray, aabb)
+        let mut pos = tuple_to_point(&data.2);
+
+        let mut direction = center - pos;
+        if direction.norm() < EPSILON {
+            pos += Vector3::new(1.0, 0.0, 0.0);
+            direction = center - pos;
+        }
+
+        (Ray::new(pos, direction), aabb)
+    }
+
+    fn is_nan_vector(v: &Vector3<f32>) -> bool {
+        v.x != v.x || v.y != v.y || v.z != v.z
+    }
+
+    quickcheck!{
+        fn test_valid_data_generation(data: (TupleVec, TupleVec, TupleVec)) -> bool {
+            let (ray, aabb) = gen_ray_to_aabb(data);
+            assert!((ray.direction.norm() - 1.0).abs() < EPSILON);
+            assert!(!is_nan_vector(&ray.direction));
+            assert!(!is_nan_vector(&ray.inv_direction));
+
+            assert!(aabb.surface_area() > 0.0);
+            true
+        }
+    }
+
+    /// Test the `Intersectable` implementation of AABB.
+    /// Only tests if the hit point lies on the AABB's surface.
+    quickcheck!{
+        fn test_ray_aabb_intersection(data: (TupleVec, TupleVec, TupleVec)) -> bool {
+            println!("\n\nNEXT\n");
+            let (ray, aabb) = gen_ray_to_aabb(data);
+
+            fn eq_vec(a: TupleVec, b: TupleVec) -> bool {
+                (a.0 - b.0).abs() < EPSILON &&
+                (a.1 - b.1).abs() < EPSILON &&
+                (a.2 - b.2).abs() < EPSILON
+            }
+
+            let hit = aabb.intersection(&ray);
+            let hit_point = match hit {
+                RaycastResult::Hit{ distance } => ray.point_along_direction(hit.distance),
+                RaycastResult::Miss => panic!("Raycast missed"),
+            };
+
+            // On how many axes the point was on min or max
+            let mut matching_axes = 0;
+            // How often the point was between min and max instead
+            let mut between_min_max = 0;
+
+            fn eq(a: f32, b: f32) -> bool {
+                (a - b).abs() < EPSILON
+            }
+
+            println!("Ray pos: {:?}", ray.origin);
+            println!("Ray dir: {:?}", ray.direction);
+            println!("AABB: {:?}", aabb);
+            println!("Hit point: {:?}", hit_point);
+
+
+            for axis in 0..3 {
+                if eq(hit_point[axis], aabb.min[axis]) ||
+                    eq(hit_point[axis], aabb.max[axis]) {
+                        matching_axes += 1;
+                    } else if hit_point[axis] > aabb.min[axis] &&
+                        hit_point[axis] < aabb.max[axis] {
+                        between_min_max += 1;
+                    }
+            }
+
+            println!("matching_axes {}; between_min_max {}", matching_axes, between_min_max);
+            let result = matching_axes >= 1 && matching_axes + between_min_max == 3;
+            println!("result: {}\n\nDONE\n", result);
+            result
+        }
     }
 
     /// Test whether a `Ray` which points at the center of an `AABB` intersects it.
@@ -484,25 +349,7 @@ mod tests {
     quickcheck!{
         fn test_ray_points_at_aabb_center(data: (TupleVec, TupleVec, TupleVec)) -> bool {
             let (ray, aabb) = gen_ray_to_aabb(data);
-            ray.intersects_aabb(&aabb)
-        }
-    }
-
-    /// Test whether a `Ray` which points at the center of an `AABB` intersects it.
-    /// Uses the naive algorithm.
-    quickcheck!{
-        fn test_ray_points_at_aabb_center_naive(data: (TupleVec, TupleVec, TupleVec)) -> bool {
-            let (ray, aabb) = gen_ray_to_aabb(data);
-            ray.intersects_aabb_naive(&aabb)
-        }
-    }
-
-    /// Test whether a `Ray` which points at the center of an `AABB` intersects it.
-    /// Uses the branchless algorithm.
-    quickcheck!{
-        fn test_ray_points_at_aabb_center_branchless(data: (TupleVec, TupleVec, TupleVec)) -> bool {
-            let (ray, aabb) = gen_ray_to_aabb(data);
-            ray.intersects_aabb_branchless(&aabb)
+            aabb.does_intersect(&ray)
         }
     }
 
@@ -516,35 +363,7 @@ mod tests {
             // Invert the direction of the ray
             ray.direction = -ray.direction;
             ray.inv_direction = -ray.inv_direction;
-            !ray.intersects_aabb(&aabb) || aabb.contains(&ray.origin)
-        }
-    }
-
-    /// Test whether a `Ray` which points away from the center of an `AABB`
-    /// does not intersect it, unless its origin is inside the `AABB`.
-    /// Uses the naive algorithm.
-    quickcheck!{
-        fn test_ray_points_from_aabb_center_naive(data: (TupleVec, TupleVec, TupleVec)) -> bool {
-            let (mut ray, aabb) = gen_ray_to_aabb(data);
-
-            // Invert the ray direction
-            ray.direction = -ray.direction;
-            ray.inv_direction = -ray.inv_direction;
-            !ray.intersects_aabb_naive(&aabb) || aabb.contains(&ray.origin)
-        }
-    }
-
-    /// Test whether a `Ray` which points away from the center of an `AABB`
-    /// does not intersect it, unless its origin is inside the `AABB`.
-    /// Uses the branchless algorithm.
-    quickcheck!{
-        fn test_ray_points_from_aabb_center_branchless(data: (TupleVec, TupleVec, TupleVec))
-                                                       -> bool {
-            let (mut ray, aabb) = gen_ray_to_aabb(data);
-            // Invert the ray direction
-            ray.direction = -ray.direction;
-            ray.inv_direction = -ray.inv_direction;
-            !ray.intersects_aabb_branchless(&aabb) || aabb.contains(&ray.origin)
+            !aabb.does_intersect(&ray) || aabb.contains(&ray.origin)
         }
     }
 
@@ -559,9 +378,9 @@ mod tests {
                                   v: u16)
                                   -> bool {
             // Define a triangle, u/v vectors and its normal
-            let triangle = (tuple_to_point(&a), tuple_to_point(&b), tuple_to_point(&c));
-            let u_vec = triangle.1 - triangle.0;
-            let v_vec = triangle.2 - triangle.0;
+            let triangle = Triangle::new(tuple_to_point(&a), tuple_to_point(&b), tuple_to_point(&c));
+            let u_vec = triangle.b() - triangle.a();
+            let v_vec = triangle.c() - triangle.a();
             let normal = u_vec.cross(&v_vec);
 
             // Get some u and v coordinates such that u+v <= 1
@@ -571,15 +390,15 @@ mod tests {
             let v = v as f32 / 100.0;
 
             // Define some point on the triangle
-            let point_on_triangle = triangle.0 + u * u_vec + v * v_vec;
+            let point_on_triangle = triangle.a() + u * u_vec + v * v_vec;
 
             // Define a ray which points at the triangle
             let origin = tuple_to_point(&origin);
             let ray = Ray::new(origin, point_on_triangle - origin);
-            let on_back_side = normal.dot(&(ray.origin - triangle.0)) <= 0.0;
+            let on_back_side = normal.dot(&(ray.origin - triangle.a())) <= 0.0;
 
             // Perform the intersection test
-            let intersects = ray.intersects_triangle(&triangle.0, &triangle.1, &triangle.2);
+            let intersects = triangle.does_intersect();
             let uv_sum = intersects.u + intersects.v;
 
             // Either the intersection is in the back side (including the triangle-plane)

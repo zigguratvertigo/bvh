@@ -8,6 +8,7 @@ use EPSILON;
 use bounding_hierarchy::BoundingHierarchy;
 use aabb::{AABB, Bounded};
 use ray::Ray;
+use raycast::Intersectable;
 use std::boxed::Box;
 use std::f32;
 use std::iter::repeat;
@@ -199,11 +200,11 @@ impl BVHNode {
     pub fn traverse_recursive(&self, ray: &Ray, indices: &mut Vec<usize>) {
         match *self {
             BVHNode::Node { ref child_l_aabb, ref child_l, ref child_r_aabb, ref child_r } => {
-                if ray.intersects_aabb(child_l_aabb) {
+                if child_l_aabb.does_intersect(ray) {
                     // print!("left ");
                     child_l.traverse_recursive(ray, indices);
                 }
-                if ray.intersects_aabb(child_r_aabb) {
+                if child_r_aabb.does_intersect(ray) {
                     // print!("right ");
                     child_r.traverse_recursive(ray, indices);
                 }
@@ -260,7 +261,7 @@ impl BoundingHierarchy for BVH {
         let mut hit_shapes = Vec::new();
         for index in &indices {
             let shape = &shapes[*index];
-            if ray.intersects_aabb(&shape.aabb()) {
+            if shape.aabb().does_intersect(ray) {
                 hit_shapes.push(shape);
             }
         }
