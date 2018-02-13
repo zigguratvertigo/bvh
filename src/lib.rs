@@ -84,6 +84,9 @@ extern crate test;
 #[macro_use]
 extern crate quickcheck;
 
+extern crate rayon;
+extern crate faster;
+
 extern crate rand;
 pub extern crate nalgebra;
 
@@ -101,3 +104,42 @@ mod utils;
 
 #[cfg(test)]
 mod testbase;
+
+#[cfg(test)]
+mod tests {
+    use test::Bencher;
+    use faster::*;
+    use rayon::prelude::*;
+
+    fn xoroshiro128plus(seed: &mut [u64; 2]) -> u64 {
+        let s0 = seed[0];
+        let mut s1 = seed[1];
+        let result = s0.wrapping_add(s1);
+
+        s1 ^= s0;
+        seed[0] = s0.rotate_left(55) ^ s1 ^ (s1 << 14);
+        seed[1] = s1.rotate_left(36);
+
+        result
+    }
+
+    #[bench]
+    fn bench_lol1(b: &mut Bencher) {
+        b.iter(|| 5);
+    }
+
+    #[bench]
+    fn bench_lol2(b: &mut Bencher) {
+        b.iter(|| 5);
+    }
+
+    #[bench]
+    fn bench_lol3(b: &mut Bencher) {
+        b.iter(|| 5);
+    }
+
+    #[bench]
+    fn bench_lol4(b: &mut Bencher) {
+        b.iter(|| 5);
+    }
+}
