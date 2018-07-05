@@ -379,11 +379,7 @@ pub fn randomly_transform_scene(
     seed: &mut u64,
 ) -> HashSet<usize> {
     let mut indices: Vec<usize> = (0..triangles.len()).collect();
-    let mut seed_array = [0u8; 32];
-    for i in 0..seed_array.len() {
-        seed_array[i] = seed.to_bytes()[i % 8];
-    }
-    let mut rng: StdRng = SeedableRng::from_seed(seed_array);
+    let mut rng: StdRng = SeedableRng::from_seed([*seed as usize].as_ref());
     rng.shuffle(&mut indices);
     indices.truncate(amount);
 
