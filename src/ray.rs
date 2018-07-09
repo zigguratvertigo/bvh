@@ -484,12 +484,12 @@ mod tests {
 
     #[bench]
     /// Benchmark for the optimized intersection algorithm.
-    fn bench_intersects_aabb(b: &mut Bencher) {
+    fn bench_intersects_aabb(b: &mut ::test::Bencher) {
         let seed = [0; 32];
         let mut rng = StdRng::from_seed(seed);
 
         b.iter(|| {
-            let one_thousand = black_box(1000);
+            let one_thousand = ::test::black_box(1000);
             for _ in 0..one_thousand {
                 let (ray, aabb) = gen_random_ray_aabb(&mut rng);
                 ray.intersects_aabb(&aabb);
@@ -499,12 +499,12 @@ mod tests {
 
     #[bench]
     /// Benchmark for the naive intersection algorithm.
-    fn bench_intersects_aabb_naive(b: &mut Bencher) {
+    fn bench_intersects_aabb_naive(b: &mut ::test::Bencher) {
         let seed = [0; 32];
         let mut rng = StdRng::from_seed(seed);
 
         b.iter(|| {
-            let one_thousand = black_box(1000);
+            let one_thousand = ::test::black_box(1000);
             for _ in 0..one_thousand {
                 let (ray, aabb) = gen_random_ray_aabb(&mut rng);
                 ray.intersects_aabb_naive(&aabb);
@@ -514,12 +514,12 @@ mod tests {
 
     #[bench]
     /// Benchmark for the branchless intersection algorithm.
-    fn bench_intersects_aabb_branchless(b: &mut Bencher) {
+    fn bench_intersects_aabb_branchless(b: &mut ::test::Bencher) {
         let seed = [0; 32];
         let mut rng = StdRng::from_seed(seed);
 
         b.iter(|| {
-            let one_thousand = black_box(1000);
+            let one_thousand = ::test::black_box(1000);
             for _ in 0..one_thousand {
                 let (ray, aabb) = gen_random_ray_aabb(&mut rng);
                 ray.intersects_aabb_branchless(&aabb);
