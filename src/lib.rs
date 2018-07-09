@@ -69,7 +69,6 @@
 //!
 
 #![deny(missing_docs)]
-#![feature(test)]
 
 #[macro_use]
 extern crate approx;
@@ -77,8 +76,6 @@ extern crate approx;
 extern crate log;
 #[cfg(test)]
 extern crate obj;
-#[cfg(test)]
-extern crate test;
 #[cfg(test)]
 #[macro_use]
 extern crate quickcheck;

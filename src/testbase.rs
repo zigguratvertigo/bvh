@@ -422,129 +422,129 @@ pub fn create_ray(seed: &mut u64, bounds: &AABB) -> Ray {
     Ray::new(origin, direction)
 }
 
-/// Benchmark the construction of a `BoundingHierarchy` with `n` triangles.
-fn build_n_triangles_bh<T: BoundingHierarchy>(n: usize, b: &mut ::test::Bencher) {
-    let bounds = default_bounds();
-    let mut triangles = create_n_cubes(n, &bounds);
-    b.iter(|| {
-        T::build(&mut triangles);
-    });
-}
+// /// Benchmark the construction of a `BoundingHierarchy` with `n` triangles.
+// fn build_n_triangles_bh<T: BoundingHierarchy>(n: usize, b: &mut ::test::Bencher) {
+//     let bounds = default_bounds();
+//     let mut triangles = create_n_cubes(n, &bounds);
+//     b.iter(|| {
+//         T::build(&mut triangles);
+//     });
+// }
 
-/// Benchmark the construction of a `BoundingHierarchy` with 1,200 triangles.
-pub fn build_1200_triangles_bh<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
-    build_n_triangles_bh::<T>(100, b);
-}
+// /// Benchmark the construction of a `BoundingHierarchy` with 1,200 triangles.
+// pub fn build_1200_triangles_bh<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
+//     build_n_triangles_bh::<T>(100, b);
+// }
 
-/// Benchmark the construction of a `BoundingHierarchy` with 12,000 triangles.
-pub fn build_12k_triangles_bh<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
-    build_n_triangles_bh::<T>(1_000, b);
-}
+// /// Benchmark the construction of a `BoundingHierarchy` with 12,000 triangles.
+// pub fn build_12k_triangles_bh<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
+//     build_n_triangles_bh::<T>(1_000, b);
+// }
 
-/// Benchmark the construction of a `BoundingHierarchy` with 120,000 triangles.
-pub fn build_120k_triangles_bh<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
-    build_n_triangles_bh::<T>(10_000, b);
-}
+// /// Benchmark the construction of a `BoundingHierarchy` with 120,000 triangles.
+// pub fn build_120k_triangles_bh<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
+//     build_n_triangles_bh::<T>(10_000, b);
+// }
 
-/// Benchmark intersecting the `triangles` list without acceleration structures.
-pub fn intersect_list(triangles: &[Triangle], bounds: &AABB, b: &mut ::test::Bencher) {
-    let mut seed = 0;
-    b.iter(|| {
-        let ray = create_ray(&mut seed, &bounds);
+// /// Benchmark intersecting the `triangles` list without acceleration structures.
+// pub fn intersect_list(triangles: &[Triangle], bounds: &AABB, b: &mut ::test::Bencher) {
+//     let mut seed = 0;
+//     b.iter(|| {
+//         let ray = create_ray(&mut seed, &bounds);
 
-        // Iterate over the list of triangles.
-        for triangle in triangles {
-            ray.intersects_triangle(&triangle.a, &triangle.b, &triangle.c);
-        }
-    });
-}
+//         // Iterate over the list of triangles.
+//         for triangle in triangles {
+//             ray.intersects_triangle(&triangle.a, &triangle.b, &triangle.c);
+//         }
+//     });
+// }
 
-#[bench]
-/// Benchmark intersecting 120,000 triangles directly.
-fn bench_intersect_120k_triangles_list(b: &mut ::test::Bencher) {
-    let bounds = default_bounds();
-    let triangles = create_n_cubes(10_000, &bounds);
-    intersect_list(&triangles, &bounds, b);
-}
+// #[bench]
+// /// Benchmark intersecting 120,000 triangles directly.
+// fn bench_intersect_120k_triangles_list(b: &mut ::test::Bencher) {
+//     let bounds = default_bounds();
+//     let triangles = create_n_cubes(10_000, &bounds);
+//     intersect_list(&triangles, &bounds, b);
+// }
 
-#[bench]
-/// Benchmark intersecting Sponza.
-fn bench_intersect_sponza_list(b: &mut ::test::Bencher) {
-    let (triangles, bounds) = load_sponza_scene();
-    intersect_list(&triangles, &bounds, b);
-}
+// #[bench]
+// /// Benchmark intersecting Sponza.
+// fn bench_intersect_sponza_list(b: &mut ::test::Bencher) {
+//     let (triangles, bounds) = load_sponza_scene();
+//     intersect_list(&triangles, &bounds, b);
+// }
 
-/// Benchmark intersecting the `triangles` list with `AABB` checks, but without acceleration
-/// structures.
-pub fn intersect_list_aabb(triangles: &[Triangle], bounds: &AABB, b: &mut ::test::Bencher) {
-    let mut seed = 0;
-    b.iter(|| {
-        let ray = create_ray(&mut seed, &bounds);
+// /// Benchmark intersecting the `triangles` list with `AABB` checks, but without acceleration
+// /// structures.
+// pub fn intersect_list_aabb(triangles: &[Triangle], bounds: &AABB, b: &mut ::test::Bencher) {
+//     let mut seed = 0;
+//     b.iter(|| {
+//         let ray = create_ray(&mut seed, &bounds);
 
-        // Iterate over the list of triangles.
-        for triangle in triangles {
-            // First test whether the ray intersects the AABB of the triangle.
-            if ray.intersects_aabb(&triangle.aabb()) {
-                ray.intersects_triangle(&triangle.a, &triangle.b, &triangle.c);
-            }
-        }
-    });
-}
+//         // Iterate over the list of triangles.
+//         for triangle in triangles {
+//             // First test whether the ray intersects the AABB of the triangle.
+//             if ray.intersects_aabb(&triangle.aabb()) {
+//                 ray.intersects_triangle(&triangle.a, &triangle.b, &triangle.c);
+//             }
+//         }
+//     });
+// }
 
-#[bench]
-/// Benchmark intersecting 120,000 triangles with preceeding `AABB` tests.
-fn bench_intersect_120k_triangles_list_aabb(b: &mut ::test::Bencher) {
-    let bounds = default_bounds();
-    let triangles = create_n_cubes(10_000, &bounds);
-    intersect_list_aabb(&triangles, &bounds, b);
-}
+// #[bench]
+// /// Benchmark intersecting 120,000 triangles with preceeding `AABB` tests.
+// fn bench_intersect_120k_triangles_list_aabb(b: &mut ::test::Bencher) {
+//     let bounds = default_bounds();
+//     let triangles = create_n_cubes(10_000, &bounds);
+//     intersect_list_aabb(&triangles, &bounds, b);
+// }
 
-#[bench]
-/// Benchmark intersecting 120,000 triangles with preceeding `AABB` tests.
-fn bench_intersect_sponza_list_aabb(b: &mut ::test::Bencher) {
-    let (triangles, bounds) = load_sponza_scene();
-    intersect_list_aabb(&triangles, &bounds, b);
-}
+// #[bench]
+// /// Benchmark intersecting 120,000 triangles with preceeding `AABB` tests.
+// fn bench_intersect_sponza_list_aabb(b: &mut ::test::Bencher) {
+//     let (triangles, bounds) = load_sponza_scene();
+//     intersect_list_aabb(&triangles, &bounds, b);
+// }
 
-pub fn intersect_bh<T: BoundingHierarchy>(
-    bh: &T,
-    triangles: &[Triangle],
-    bounds: &AABB,
-    b: &mut ::test::Bencher,
-) {
-    let mut seed = 0;
-    b.iter(|| {
-        let ray = create_ray(&mut seed, bounds);
+// pub fn intersect_bh<T: BoundingHierarchy>(
+//     bh: &T,
+//     triangles: &[Triangle],
+//     bounds: &AABB,
+//     b: &mut ::test::Bencher,
+// ) {
+//     let mut seed = 0;
+//     b.iter(|| {
+//         let ray = create_ray(&mut seed, bounds);
 
-        // Traverse the `BoundingHierarchy` recursively.
-        let hits = bh.traverse(&ray, triangles);
+//         // Traverse the `BoundingHierarchy` recursively.
+//         let hits = bh.traverse(&ray, triangles);
 
-        // Traverse the resulting list of positive `AABB` tests
-        for triangle in &hits {
-            ray.intersects_triangle(&triangle.a, &triangle.b, &triangle.c);
-        }
-    });
-}
+//         // Traverse the resulting list of positive `AABB` tests
+//         for triangle in &hits {
+//             ray.intersects_triangle(&triangle.a, &triangle.b, &triangle.c);
+//         }
+//     });
+// }
 
-/// Benchmark the traversal of a `BoundingHierarchy` with `n` triangles.
-pub fn intersect_n_triangles<T: BoundingHierarchy>(n: usize, b: &mut ::test::Bencher) {
-    let bounds = default_bounds();
-    let mut triangles = create_n_cubes(n, &bounds);
-    let bh = T::build(&mut triangles);
-    intersect_bh(&bh, &triangles, &bounds, b)
-}
+// /// Benchmark the traversal of a `BoundingHierarchy` with `n` triangles.
+// pub fn intersect_n_triangles<T: BoundingHierarchy>(n: usize, b: &mut ::test::Bencher) {
+//     let bounds = default_bounds();
+//     let mut triangles = create_n_cubes(n, &bounds);
+//     let bh = T::build(&mut triangles);
+//     intersect_bh(&bh, &triangles, &bounds, b)
+// }
 
-/// Benchmark the traversal of a `BoundingHierarchy` with 1,200 triangles.
-pub fn intersect_1200_triangles_bh<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
-    intersect_n_triangles::<T>(100, b);
-}
+// /// Benchmark the traversal of a `BoundingHierarchy` with 1,200 triangles.
+// pub fn intersect_1200_triangles_bh<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
+//     intersect_n_triangles::<T>(100, b);
+// }
 
-/// Benchmark the traversal of a `BoundingHierarchy` with 12,000 triangles.
-pub fn intersect_12k_triangles_bh<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
-    intersect_n_triangles::<T>(1_000, b);
-}
+// /// Benchmark the traversal of a `BoundingHierarchy` with 12,000 triangles.
+// pub fn intersect_12k_triangles_bh<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
+//     intersect_n_triangles::<T>(1_000, b);
+// }
 
-/// Benchmark the traversal of a `BoundingHierarchy` with 120,000 triangles.
-pub fn intersect_120k_triangles_bh<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
-    intersect_n_triangles::<T>(10_000, b);
-}
+// /// Benchmark the traversal of a `BoundingHierarchy` with 120,000 triangles.
+// pub fn intersect_120k_triangles_bh<T: BoundingHierarchy>(b: &mut ::test::Bencher) {
+//     intersect_n_triangles::<T>(10_000, b);
+// }

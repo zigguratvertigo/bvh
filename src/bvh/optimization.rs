@@ -516,15 +516,20 @@ impl BVH {
 
 #[cfg(test)]
 pub mod tests {
-    use aabb::{Bounded, AABB};
+    use aabb::{Bounded};
+    //use aabb::{Bounded, AABB};
     use bounding_hierarchy::BHShape;
     use bvh::{BVHNode, BVH};
     use nalgebra::Point3;
     use std::collections::HashSet;
-    use testbase::{
-        build_some_bh, create_n_cubes, default_bounds, intersect_bh, load_sponza_scene,
-        randomly_transform_scene, Triangle, UnitBox,
-    };
+    // use testbase::{
+    //     build_some_bh, create_n_cubes, default_bounds, intersect_bh, load_sponza_scene,
+    //     randomly_transform_scene, Triangle, UnitBox,
+    // };
+
+    use testbase::{build_some_bh, create_n_cubes, default_bounds, randomly_transform_scene,
+                   Triangle, UnitBox};
+
     use EPSILON;
 
     #[test]
@@ -979,207 +984,207 @@ pub mod tests {
         bvh.assert_tight(&triangles);
     }
 
-    #[bench]
-    /// Benchmark randomizing 50% of the shapes in a `BVH`.
-    fn bench_randomize_120k_50p(b: &mut ::test::Bencher) {
-        let bounds = default_bounds();
-        let mut triangles = create_n_cubes(10_000, &bounds);
-        let mut seed = 0;
+    // #[bench]
+    // /// Benchmark randomizing 50% of the shapes in a `BVH`.
+    // fn bench_randomize_120k_50p(b: &mut ::test::Bencher) {
+    //     let bounds = default_bounds();
+    //     let mut triangles = create_n_cubes(10_000, &bounds);
+    //     let mut seed = 0;
 
-        b.iter(|| {
-            randomly_transform_scene(&mut triangles, 60_000, &bounds, None, &mut seed);
-        });
-    }
+    //     b.iter(|| {
+    //         randomly_transform_scene(&mut triangles, 60_000, &bounds, None, &mut seed);
+    //     });
+    // }
 
-    /// Benchmark optimizing a `BVH` with 120,000 `Triangle`s, where `percent`
-    /// `Triangles` have been randomly moved.
-    fn optimize_bvh_120k(percent: f32, b: &mut ::test::Bencher) {
-        let bounds = default_bounds();
-        let mut triangles = create_n_cubes(10_000, &bounds);
-        let mut bvh = BVH::build(&mut triangles);
-        let num_move = (triangles.len() as f32 * percent) as usize;
-        let mut seed = 0;
+    // /// Benchmark optimizing a `BVH` with 120,000 `Triangle`s, where `percent`
+    // /// `Triangles` have been randomly moved.
+    // fn optimize_bvh_120k(percent: f32, b: &mut ::test::Bencher) {
+    //     let bounds = default_bounds();
+    //     let mut triangles = create_n_cubes(10_000, &bounds);
+    //     let mut bvh = BVH::build(&mut triangles);
+    //     let num_move = (triangles.len() as f32 * percent) as usize;
+    //     let mut seed = 0;
 
-        b.iter(|| {
-            let updated =
-                randomly_transform_scene(&mut triangles, num_move, &bounds, Some(10.0), &mut seed);
-            bvh.optimize(&updated, &triangles);
-        });
-    }
+    //     b.iter(|| {
+    //         let updated =
+    //             randomly_transform_scene(&mut triangles, num_move, &bounds, Some(10.0), &mut seed);
+    //         bvh.optimize(&updated, &triangles);
+    //     });
+    // }
 
-    #[bench]
-    fn bench_optimize_bvh_120k_00p(b: &mut ::test::Bencher) {
-        optimize_bvh_120k(0.0, b);
-    }
+    // #[bench]
+    // fn bench_optimize_bvh_120k_00p(b: &mut ::test::Bencher) {
+    //     optimize_bvh_120k(0.0, b);
+    // }
 
-    #[bench]
-    fn bench_optimize_bvh_120k_01p(b: &mut ::test::Bencher) {
-        optimize_bvh_120k(0.01, b);
-    }
+    // #[bench]
+    // fn bench_optimize_bvh_120k_01p(b: &mut ::test::Bencher) {
+    //     optimize_bvh_120k(0.01, b);
+    // }
 
-    #[bench]
-    fn bench_optimize_bvh_120k_10p(b: &mut ::test::Bencher) {
-        optimize_bvh_120k(0.1, b);
-    }
+    // #[bench]
+    // fn bench_optimize_bvh_120k_10p(b: &mut ::test::Bencher) {
+    //     optimize_bvh_120k(0.1, b);
+    // }
 
-    #[bench]
-    fn bench_optimize_bvh_120k_50p(b: &mut ::test::Bencher) {
-        optimize_bvh_120k(0.5, b);
-    }
+    // #[bench]
+    // fn bench_optimize_bvh_120k_50p(b: &mut ::test::Bencher) {
+    //     optimize_bvh_120k(0.5, b);
+    // }
 
-    /// Move `percent` `Triangle`s in the scene given by `triangles` and optimize the
-    /// `BVH`. Iterate this procedure `iterations` times. Afterwards benchmark the performance
-    /// of intersecting this scene/`BVH`.
-    fn intersect_scene_after_optimize(
-        mut triangles: &mut Vec<Triangle>,
-        bounds: &AABB,
-        percent: f32,
-        max_offset: Option<f32>,
-        iterations: usize,
-        b: &mut ::test::Bencher,
-    ) {
-        let mut bvh = BVH::build(&mut triangles);
-        let num_move = (triangles.len() as f32 * percent) as usize;
-        let mut seed = 0;
+    // /// Move `percent` `Triangle`s in the scene given by `triangles` and optimize the
+    // /// `BVH`. Iterate this procedure `iterations` times. Afterwards benchmark the performance
+    // /// of intersecting this scene/`BVH`.
+    // fn intersect_scene_after_optimize(
+    //     mut triangles: &mut Vec<Triangle>,
+    //     bounds: &AABB,
+    //     percent: f32,
+    //     max_offset: Option<f32>,
+    //     iterations: usize,
+    //     b: &mut ::test::Bencher,
+    // ) {
+    //     let mut bvh = BVH::build(&mut triangles);
+    //     let num_move = (triangles.len() as f32 * percent) as usize;
+    //     let mut seed = 0;
 
-        for _ in 0..iterations {
-            let updated =
-                randomly_transform_scene(&mut triangles, num_move, &bounds, max_offset, &mut seed);
-            bvh.optimize(&updated, &triangles);
-        }
+    //     for _ in 0..iterations {
+    //         let updated =
+    //             randomly_transform_scene(&mut triangles, num_move, &bounds, max_offset, &mut seed);
+    //         bvh.optimize(&updated, &triangles);
+    //     }
 
-        intersect_bh(&bvh, &triangles, &bounds, b);
-    }
+    //     intersect_bh(&bvh, &triangles, &bounds, b);
+    // }
 
-    #[bench]
-    fn bench_intersect_120k_after_optimize_00p(b: &mut ::test::Bencher) {
-        let bounds = default_bounds();
-        let mut triangles = create_n_cubes(10_000, &bounds);
-        intersect_scene_after_optimize(&mut triangles, &bounds, 0.0, None, 10, b);
-    }
+    // #[bench]
+    // fn bench_intersect_120k_after_optimize_00p(b: &mut ::test::Bencher) {
+    //     let bounds = default_bounds();
+    //     let mut triangles = create_n_cubes(10_000, &bounds);
+    //     intersect_scene_after_optimize(&mut triangles, &bounds, 0.0, None, 10, b);
+    // }
 
-    #[bench]
-    fn bench_intersect_120k_after_optimize_01p(b: &mut ::test::Bencher) {
-        let bounds = default_bounds();
-        let mut triangles = create_n_cubes(10_000, &bounds);
-        intersect_scene_after_optimize(&mut triangles, &bounds, 0.01, None, 10, b);
-    }
+    // #[bench]
+    // fn bench_intersect_120k_after_optimize_01p(b: &mut ::test::Bencher) {
+    //     let bounds = default_bounds();
+    //     let mut triangles = create_n_cubes(10_000, &bounds);
+    //     intersect_scene_after_optimize(&mut triangles, &bounds, 0.01, None, 10, b);
+    // }
 
-    #[bench]
-    fn bench_intersect_120k_after_optimize_10p(b: &mut ::test::Bencher) {
-        let bounds = default_bounds();
-        let mut triangles = create_n_cubes(10_000, &bounds);
-        intersect_scene_after_optimize(&mut triangles, &bounds, 0.1, None, 10, b);
-    }
+    // #[bench]
+    // fn bench_intersect_120k_after_optimize_10p(b: &mut ::test::Bencher) {
+    //     let bounds = default_bounds();
+    //     let mut triangles = create_n_cubes(10_000, &bounds);
+    //     intersect_scene_after_optimize(&mut triangles, &bounds, 0.1, None, 10, b);
+    // }
 
-    #[bench]
-    fn bench_intersect_120k_after_optimize_50p(b: &mut ::test::Bencher) {
-        let bounds = default_bounds();
-        let mut triangles = create_n_cubes(10_000, &bounds);
-        intersect_scene_after_optimize(&mut triangles, &bounds, 0.5, None, 10, b);
-    }
+    // #[bench]
+    // fn bench_intersect_120k_after_optimize_50p(b: &mut ::test::Bencher) {
+    //     let bounds = default_bounds();
+    //     let mut triangles = create_n_cubes(10_000, &bounds);
+    //     intersect_scene_after_optimize(&mut triangles, &bounds, 0.5, None, 10, b);
+    // }
 
-    /// Move `percent` `Triangle`s in the scene given by `triangles` `iterations` times.
-    /// Afterwards optimize the `BVH` and benchmark the performance of intersecting this
-    /// scene/`BVH`. Used to compare optimizing with rebuilding. For reference see
-    /// `intersect_scene_after_optimize`.
-    fn intersect_scene_with_rebuild(
-        mut triangles: &mut Vec<Triangle>,
-        bounds: &AABB,
-        percent: f32,
-        max_offset: Option<f32>,
-        iterations: usize,
-        b: &mut ::test::Bencher,
-    ) {
-        let num_move = (triangles.len() as f32 * percent) as usize;
-        let mut seed = 0;
-        for _ in 0..iterations {
-            randomly_transform_scene(&mut triangles, num_move, &bounds, max_offset, &mut seed);
-        }
+    // /// Move `percent` `Triangle`s in the scene given by `triangles` `iterations` times.
+    // /// Afterwards optimize the `BVH` and benchmark the performance of intersecting this
+    // /// scene/`BVH`. Used to compare optimizing with rebuilding. For reference see
+    // /// `intersect_scene_after_optimize`.
+    // fn intersect_scene_with_rebuild(
+    //     mut triangles: &mut Vec<Triangle>,
+    //     bounds: &AABB,
+    //     percent: f32,
+    //     max_offset: Option<f32>,
+    //     iterations: usize,
+    //     b: &mut ::test::Bencher,
+    // ) {
+    //     let num_move = (triangles.len() as f32 * percent) as usize;
+    //     let mut seed = 0;
+    //     for _ in 0..iterations {
+    //         randomly_transform_scene(&mut triangles, num_move, &bounds, max_offset, &mut seed);
+    //     }
 
-        let bvh = BVH::build(&mut triangles);
-        intersect_bh(&bvh, &triangles, &bounds, b);
-    }
+    //     let bvh = BVH::build(&mut triangles);
+    //     intersect_bh(&bvh, &triangles, &bounds, b);
+    // }
 
-    #[bench]
-    fn bench_intersect_120k_with_rebuild_00p(b: &mut ::test::Bencher) {
-        let bounds = default_bounds();
-        let mut triangles = create_n_cubes(10_000, &bounds);
-        intersect_scene_with_rebuild(&mut triangles, &bounds, 0.0, None, 10, b);
-    }
+    // #[bench]
+    // fn bench_intersect_120k_with_rebuild_00p(b: &mut ::test::Bencher) {
+    //     let bounds = default_bounds();
+    //     let mut triangles = create_n_cubes(10_000, &bounds);
+    //     intersect_scene_with_rebuild(&mut triangles, &bounds, 0.0, None, 10, b);
+    // }
 
-    #[bench]
-    fn bench_intersect_120k_with_rebuild_01p(b: &mut ::test::Bencher) {
-        let bounds = default_bounds();
-        let mut triangles = create_n_cubes(10_000, &bounds);
-        intersect_scene_with_rebuild(&mut triangles, &bounds, 0.01, None, 10, b);
-    }
+    // #[bench]
+    // fn bench_intersect_120k_with_rebuild_01p(b: &mut ::test::Bencher) {
+    //     let bounds = default_bounds();
+    //     let mut triangles = create_n_cubes(10_000, &bounds);
+    //     intersect_scene_with_rebuild(&mut triangles, &bounds, 0.01, None, 10, b);
+    // }
 
-    #[bench]
-    fn bench_intersect_120k_with_rebuild_10p(b: &mut ::test::Bencher) {
-        let bounds = default_bounds();
-        let mut triangles = create_n_cubes(10_000, &bounds);
-        intersect_scene_with_rebuild(&mut triangles, &bounds, 0.1, None, 10, b);
-    }
+    // #[bench]
+    // fn bench_intersect_120k_with_rebuild_10p(b: &mut ::test::Bencher) {
+    //     let bounds = default_bounds();
+    //     let mut triangles = create_n_cubes(10_000, &bounds);
+    //     intersect_scene_with_rebuild(&mut triangles, &bounds, 0.1, None, 10, b);
+    // }
 
-    #[bench]
-    fn bench_intersect_120k_with_rebuild_50p(b: &mut ::test::Bencher) {
-        let bounds = default_bounds();
-        let mut triangles = create_n_cubes(10_000, &bounds);
-        intersect_scene_with_rebuild(&mut triangles, &bounds, 0.5, None, 10, b);
-    }
+    // #[bench]
+    // fn bench_intersect_120k_with_rebuild_50p(b: &mut ::test::Bencher) {
+    //     let bounds = default_bounds();
+    //     let mut triangles = create_n_cubes(10_000, &bounds);
+    //     intersect_scene_with_rebuild(&mut triangles, &bounds, 0.5, None, 10, b);
+    // }
 
-    /// Benchmark intersecting a `BVH` for Sponza after randomly moving one `Triangle` and
-    /// optimizing.
-    fn intersect_sponza_after_optimize(percent: f32, b: &mut ::test::Bencher) {
-        let (mut triangles, bounds) = load_sponza_scene();
-        intersect_scene_after_optimize(&mut triangles, &bounds, percent, Some(0.1), 10, b);
-    }
+    // /// Benchmark intersecting a `BVH` for Sponza after randomly moving one `Triangle` and
+    // /// optimizing.
+    // fn intersect_sponza_after_optimize(percent: f32, b: &mut ::test::Bencher) {
+    //     let (mut triangles, bounds) = load_sponza_scene();
+    //     intersect_scene_after_optimize(&mut triangles, &bounds, percent, Some(0.1), 10, b);
+    // }
 
-    #[bench]
-    fn bench_intersect_sponza_after_optimize_00p(b: &mut ::test::Bencher) {
-        intersect_sponza_after_optimize(0.0, b);
-    }
+    // #[bench]
+    // fn bench_intersect_sponza_after_optimize_00p(b: &mut ::test::Bencher) {
+    //     intersect_sponza_after_optimize(0.0, b);
+    // }
 
-    #[bench]
-    fn bench_intersect_sponza_after_optimize_01p(b: &mut ::test::Bencher) {
-        intersect_sponza_after_optimize(0.01, b);
-    }
+    // #[bench]
+    // fn bench_intersect_sponza_after_optimize_01p(b: &mut ::test::Bencher) {
+    //     intersect_sponza_after_optimize(0.01, b);
+    // }
 
-    #[bench]
-    fn bench_intersect_sponza_after_optimize_10p(b: &mut ::test::Bencher) {
-        intersect_sponza_after_optimize(0.1, b);
-    }
+    // #[bench]
+    // fn bench_intersect_sponza_after_optimize_10p(b: &mut ::test::Bencher) {
+    //     intersect_sponza_after_optimize(0.1, b);
+    // }
 
-    #[bench]
-    fn bench_intersect_sponza_after_optimize_50p(b: &mut ::test::Bencher) {
-        intersect_sponza_after_optimize(0.5, b);
-    }
+    // #[bench]
+    // fn bench_intersect_sponza_after_optimize_50p(b: &mut ::test::Bencher) {
+    //     intersect_sponza_after_optimize(0.5, b);
+    // }
 
-    /// Benchmark intersecting a `BVH` for Sponza after rebuilding. Used to compare optimizing
-    /// with rebuilding. For reference see `intersect_sponza_after_optimize`.
-    fn intersect_sponza_with_rebuild(percent: f32, b: &mut ::test::Bencher) {
-        let (mut triangles, bounds) = load_sponza_scene();
-        intersect_scene_with_rebuild(&mut triangles, &bounds, percent, Some(0.1), 10, b);
-    }
+    // /// Benchmark intersecting a `BVH` for Sponza after rebuilding. Used to compare optimizing
+    // /// with rebuilding. For reference see `intersect_sponza_after_optimize`.
+    // fn intersect_sponza_with_rebuild(percent: f32, b: &mut ::test::Bencher) {
+    //     let (mut triangles, bounds) = load_sponza_scene();
+    //     intersect_scene_with_rebuild(&mut triangles, &bounds, percent, Some(0.1), 10, b);
+    // }
 
-    #[bench]
-    fn bench_intersect_sponza_with_rebuild_00p(b: &mut ::test::Bencher) {
-        intersect_sponza_with_rebuild(0.0, b);
-    }
+    // #[bench]
+    // fn bench_intersect_sponza_with_rebuild_00p(b: &mut ::test::Bencher) {
+    //     intersect_sponza_with_rebuild(0.0, b);
+    // }
 
-    #[bench]
-    fn bench_intersect_sponza_with_rebuild_01p(b: &mut ::test::Bencher) {
-        intersect_sponza_with_rebuild(0.01, b);
-    }
+    // #[bench]
+    // fn bench_intersect_sponza_with_rebuild_01p(b: &mut ::test::Bencher) {
+    //     intersect_sponza_with_rebuild(0.01, b);
+    // }
 
-    #[bench]
-    fn bench_intersect_sponza_with_rebuild_10p(b: &mut ::test::Bencher) {
-        intersect_sponza_with_rebuild(0.1, b);
-    }
+    // #[bench]
+    // fn bench_intersect_sponza_with_rebuild_10p(b: &mut ::test::Bencher) {
+    //     intersect_sponza_with_rebuild(0.1, b);
+    // }
 
-    #[bench]
-    fn bench_intersect_sponza_with_rebuild_50p(b: &mut ::test::Bencher) {
-        intersect_sponza_with_rebuild(0.5, b);
-    }
+    // #[bench]
+    // fn bench_intersect_sponza_with_rebuild_50p(b: &mut ::test::Bencher) {
+    //     intersect_sponza_with_rebuild(0.5, b);
+    // }
 }
