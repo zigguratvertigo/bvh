@@ -722,25 +722,25 @@ pub mod tests {
 
     #[bench]
     /// Benchmark the construction of a `BVH` with 1,200 triangles.
-    fn bench_build_1200_triangles_bvh(mut b: &mut ::test::Bencher) {
+    fn bench_build_1200_triangles_bvh(mut b: &mut Bencher) {
         build_1200_triangles_bh::<BVH>(&mut b);
     }
 
     #[bench]
     /// Benchmark the construction of a `BVH` with 12,000 triangles.
-    fn bench_build_12k_triangles_bvh(mut b: &mut ::test::Bencher) {
+    fn bench_build_12k_triangles_bvh(mut b: &mut Bencher) {
         build_12k_triangles_bh::<BVH>(&mut b);
     }
 
     #[bench]
     /// Benchmark the construction of a `BVH` with 120,000 triangles.
-    fn bench_build_120k_triangles_bvh(mut b: &mut ::test::Bencher) {
+    fn bench_build_120k_triangles_bvh(mut b: &mut Bencher) {
         build_120k_triangles_bh::<BVH>(&mut b);
     }
 
     #[bench]
     /// Benchmark the construction of a `BVH` for the Sponza scene.
-    fn bench_build_sponza_bvh(b: &mut ::test::Bencher) {
+    fn bench_build_sponza_bvh(b: &mut Bencher) {
         let (mut triangles, _) = load_sponza_scene();
         b.iter(|| {
             BVH::build(&mut triangles);
@@ -749,25 +749,25 @@ pub mod tests {
 
     #[bench]
     /// Benchmark intersecting 1,200 triangles using the recursive `BVH`.
-    fn bench_intersect_1200_triangles_bvh(mut b: &mut ::test::Bencher) {
+    fn bench_intersect_1200_triangles_bvh(mut b: &mut Bencher) {
         intersect_1200_triangles_bh::<BVH>(&mut b);
     }
 
     #[bench]
     /// Benchmark intersecting 12,000 triangles using the recursive `BVH`.
-    fn bench_intersect_12k_triangles_bvh(mut b: &mut ::test::Bencher) {
+    fn bench_intersect_12k_triangles_bvh(mut b: &mut Bencher) {
         intersect_12k_triangles_bh::<BVH>(&mut b);
     }
 
     #[bench]
     /// Benchmark intersecting 120,000 triangles using the recursive `BVH`.
-    fn bench_intersect_120k_triangles_bvh(mut b: &mut ::test::Bencher) {
+    fn bench_intersect_120k_triangles_bvh(mut b: &mut Bencher) {
         intersect_120k_triangles_bh::<BVH>(&mut b);
     }
 
     #[bench]
     /// Benchmark the traversal of a `BVH` with the Sponza scene.
-    fn bench_intersect_sponza_bvh(b: &mut ::test::Bencher) {
+    fn bench_intersect_sponza_bvh(b: &mut Bencher) {
         let (mut triangles, bounds) = load_sponza_scene();
         let bvh = BVH::build(&mut triangles);
         intersect_bh(&bvh, &triangles, &bounds, b)

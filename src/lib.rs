@@ -69,7 +69,6 @@
 //!
 
 #![deny(missing_docs)]
-#![feature(test)]
 
 #[macro_use]
 extern crate approx;
@@ -78,13 +77,13 @@ extern crate log;
 #[cfg(test)]
 extern crate obj;
 #[cfg(test)]
-extern crate test;
-#[cfg(test)]
 #[macro_use]
 extern crate quickcheck;
 
 pub extern crate nalgebra;
 extern crate rand;
+
+extern crate bencher;
 
 /// A minimal floating value used as a lower bound.
 /// TODO: replace by/add ULPS/relative float comparison methods.
